@@ -1,0 +1,106 @@
+/* General Styles */
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: #0e0e10;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+}
+
+/* Header */
+header {
+    width: 100%;
+    background: #121212;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 50px;
+    margin-right: 10px;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: 600;
+}
+
+/* Container Box */
+.container {
+    max-width: 600px;
+    background: #121212;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 212, 255, 0.5);
+    margin-top: 80px; /* Prevents overlap with fixed header */
+}
+
+/* Buttons */
+.button {
+    display: block;
+    padding: 1rem;
+    margin: 10px 0;
+    color: white;
+    background: linear-gradient(135deg, #00d4ff, #0072ff);
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.button:hover {
+    opacity: 0.9;
+}
+
+/* Form Inputs */
+input {
+    width: 100%;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #1e1e24;
+    color: white;
+    outline: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    nav {
+        margin-top: 10px;
+    }
+
+    nav a {
+        margin-left: 0;
+        display: block;
+    }
+
+    .container {
+        padding: 1.5rem;
+    }
+}
