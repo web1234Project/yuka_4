@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Flashcards</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Poppins', sans-serif;
+      background: #0e0e10;
+      color: #fff;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .flashcard-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .flashcard {
+      background: #1f1f2e;
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0, 212, 255, 0.2);
+    }
+
+    .flashcard h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #00d4ff;
+    }
+
+    .flashcard p {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #ccc;
+    }
+
+    .flashcard .actions {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .actions i {
+      cursor: pointer;
+      color: #00d4ff;
+      transition: 0.3s;
+    }
+
+    .actions i:hover {
+      color: red;
+    }
+
+    .no-flashcards {
+      text-align: center;
+      margin-top: 100px;
+      font-size: 18px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h2>My Flashcards</h2>
+  <div id="flashcardWrapper" class="flashcard-container"></div>
+  <p id="noFlashcardsMsg" class="no-flashcards" style="display: none;">No flashcards created yet.</p>
+
+  <script>
+    // Simulated flashcard data
+    const flashcards = []; // <- Make this an empty array to simulate no flashcards
+
+    const flashcardWrapper = document.getElementById('flashcardWrapper');
+    const noFlashcardsMsg = document.getElementById('noFlashcardsMsg');
+
+    function displayFlashcards() {
+      if (flashcards.length === 0) {
+        noFlashcardsMsg.style.display = 'block';
+        flashcardWrapper.style.display = 'none';
+      } else {
+        noFlashcardsMsg.style.display = 'none';
+        flashcardWrapper.style.display = 'grid';
+
+        flashcards.forEach(card => {
+          const cardEl = document.createElement('div');
+          cardEl.className = 'flashcard';
+          cardEl.innerHTML = `
+            <div class="actions">
+              <i class="fas fa-edit"></i>
+              <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3>${card.subject}</h3>
+            <p><strong>Created:</strong> ${card.date}</p>
+            <p><strong>Notes:</strong> ${card.notes || 'No notes added'}</p>
+          `;
+          flashcardWrapper.appendChild(cardEl);
+        });
+      }
+    }
+
+    displayFlashcards();
+  </script>
+</body>
+</html>
