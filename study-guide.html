@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Guide</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #121212;
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      font-size: 16px;
+    }
+
+    .study-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background-color: #1a1a1a;
+      box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
+    }
+
+    .study-header h1 {
+      font-size: 28px;
+      color: #00f7ff;
+    }
+
+    .add-subject-btn {
+      padding: 10px 20px;
+      background-color: #00f7ff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #121212;
+      transition: 0.3s ease;
+      font-size: 16px;
+    }
+
+    .add-subject-btn:hover {
+      background-color: #02c6d2;
+    }
+
+    .subject-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .subject-card {
+      background-color: #1e1e1e;
+      border: 1px solid #00f7ff30;
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 15px #00f7ff20;
+      transition: 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .subject-card h2 {
+      font-size: 20px;
+    }
+
+    .subject-card p {
+      font-size: 16px;
+    }
+
+    .subject-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 25px #00f7ff60;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 6px;
+      transition: 0.3s ease;
+    }
+
+    .delete-btn:hover {
+      background: darkred;
+    }
+
+    .add-subject-form {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      gap: 15px;
+      background-color: #1e1e1e;
+      padding: 40px;
+      border-radius: 15px;
+      margin: 20px;
+      box-shadow: 0 0 20px #00f7ff20;
+    }
+
+    .add-subject-form input,
+    .add-subject-form textarea {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2a2a2a;
+      color: #ffffff;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .add-subject-form input[type="file"] {
+      background-color: transparent;
+      color: #999;
+    }
+
+    .save-btn {
+      background-color: #00f7ff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      color: #121212;
+      cursor: pointer;
+      transition: 0.3s ease;
+      width: 150px;
+      align-self: flex-start;
+      font-size: 16px;
+    }
+
+    .save-btn:hover {
+      background-color: #02c6d2;
+    }
+  </style>
+</head>
+<body>
+
+<div class="study-header">
+  <h1>📚 Study Guide</h1>
+  <button class="add-subject-btn" onclick="showAddSubject()">+ Add Subject</button>
+</div>
+
+<!-- Subject List -->
+<div class="subject-container" id="subjectContainer">
+  <p style="text-align:center; font-size:18px; color:#aaa;">No subjects added yet. Start by adding one!</p>
+</div>
+
+<!-- Add Subject Form -->
+<div class="add-subject-form" id="addSubjectForm">
+  <input type="text" id="subjectName" placeholder="Enter Subject Name">
+  <textarea id="subjectNotes" rows="4" placeholder="Add Notes (optional)"></textarea>
+  <input type="file" id="subjectFiles" multiple>
+  <button class="save-btn" onclick="saveSubject()">Save Subject</button>
+</div>
+
+<script>
+  const subjects = [];
+  const subjectContainer = document.getElementById('subjectContainer');
+  const addSubjectForm = document.getElementById('addSubjectForm');
+
+  function showAddSubject() {
+    subjectContainer.style.display = 'none';
+    addSubjectForm.style.display = 'flex';
+  }
+
+  function saveSubject() {
+    const name = document.getElementById('subjectName').value.trim();
+    const notes = document.getElementById('subjectNotes').value.trim();
+    const files = document.getElementById('subjectFiles').files;
+
+    if (name === '') {
+      alert('Please enter a subject name!');
+      return;
+    }
+
+    subjects.push({
+      name: name,
+      notes: notes,
+      fileCount: files.length
+    });
+
+    document.getElementById('subjectName').value = '';
+    document.getElementById('subjectNotes').value = '';
+    document.getElementById('subjectFiles').value = '';
+
+    renderSubjects();
+
+    addSubjectForm.style.display = 'none';
+    subjectContainer.style.display = 'grid';
+  }
+
+  function deleteSubject(index) {
+    subjects.splice(index, 1);
+    renderSubjects();
+  }
+
+  function renderSubjects() {
+    subjectContainer.innerHTML = '';
+
+    if (subjects.length === 0) {
+      subjectContainer.innerHTML = `<p style="text-align:center; font-size:18px; color:#aaa;">No subjects added yet. Start by adding one!</p>`;
+      return;
+    }
+
+    subjects.forEach((subject, index) => {
+      const card = document.createElement('div');
+      card.className = 'subject-card';
+      card.innerHTML = `
+        <h2>${subject.name}</h2>
+        <p>${subject.fileCount} Files</p>
+        <button class="delete-btn" onclick="deleteSubject(${index})">Delete</button>
+      `;
+      subjectContainer.appendChild(card);
+    });
+  }
+</script>
+
+</body>
+</html>
