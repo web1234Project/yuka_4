@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Flashcard - RecallIt</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #0e0e10;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Header Styling */
+    .flashcard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background-color: #1a1a1a;
+      box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
+      width: 100%;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+
+    .logo-name {
+      font-size: 24px;
+      color: #00f7ff;
+      font-weight: bold;
+    }
+
+    .home-section .home-link {
+      font-size: 30px;
+      color: #00f7ff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .home-link:hover {
+      color: #02c6d2;
+    }
+
+    /* Flashcard Form Container */
+    .container {
+      width: 100%;
+      max-width: 1700px;
+      background: #1a1a1a;
+      padding: 40px 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+      margin: 40px auto;
+    }
+
+    h2 {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #ccc;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: #2c2c3e;
+      color: #fff;
+      font-size: 15px;
+    }
+
+    textarea {
+      resize: none;
+      min-height: 80px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .import-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border: 1px solid #999;
+      border-radius: 12px;
+      background: #1a1a2e;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .import-btn:hover {
+      background-color: #2c2c3e;
+      border-color: #00d4ff;
+      color: #00d4ff;
+    }
+
+    .difficulty-btn-container {
+      display: flex;
+      gap: 2px; /* Reduced gap for tighter spacing */
+      justify-content: center;
+      margin-top: 10px; /* Adjusted margin for compactness */
+    }
+
+    .difficulty-btn {
+      padding: 10px 20px; /* Adjusted padding for better proportions */
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s ease;
+      border: none;
+      color: #fff; /* Improved text visibility */
+      position: relative;
+      padding-left: 40px; /* Make space for the check icon */
+    }
+
+    .btn-easy {
+      background-color: #00a859; /* Vibrant green for better contrast */
+    }
+
+    .btn-medium {
+      background-color: #ffaa00; /* Vibrant orange for better contrast */
+    }
+
+    .btn-difficult {
+      background-color: #e94b3c; /* Vibrant red for better contrast */
+    }
+
+    .difficulty-btn:hover {
+      opacity: 0.8;
+    }
+
+    .difficulty-btn.selected {
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00f7ff;
+    }
+
+    .difficulty-btn .check-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .difficulty-btn.selected .check-icon {
+      opacity: 1;
+    }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #0072ff, #00d4ff);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s ease;
+      display: block;
+      margin: 20px auto 0;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="flashcard-header">
+    <div class="logo-section">
+      <img src="logo.png" alt="RecallIt Logo" class="logo" />
+      <span class="logo-name">RecallIt</span>
+    </div>
+    <div class="home-section">
+      <a href="user-dashboard.html" class="home-link">
+        <i class="fas fa-home"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- Flashcard Form -->
+  <div class="container">
+    <form method="post">
+      <div class="form-group">
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name=" " placeholder="Enter subject..." />
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea id="notes" placeholder="Any extra notes..."></textarea>
+      </div>
+
+      <!-- Difficulty Level Section -->
+      <div class="form-group">
+        <label>Difficulty Level</label>
+        <div class="difficulty-btn-container">
+          <button type="button" class="difficulty-btn btn-easy">
+            <i class="fas fa-check check-icon"></i>
+            Easy
+          </button>
+          <button type="button" class="difficulty-btn btn-medium">
+            <i class="fas fa-check check-icon"></i>
+            Medium
+          </button>
+          <button type="button" class="difficulty-btn btn-difficult">
+            <i class="fas fa-check check-icon"></i>
+            Difficult
+          </button>
+        </div>
+      </div>
+      <!-- Question Field -->
+      <div class="form-group">
+        <label for="question">Question</label>
+        <input type="text" id="question" name="question" placeholder="Enter question..." />
+      </div>
+
+      <!-- Answer Field -->
+      <div class="form-group">
+        <label for="answer">Answer</label>
+        <textarea id="answer" name="answer" placeholder="Enter answer..."></textarea>
+      </div>
+
+
+      <div class="form-group">
+        <label for="notesImageUpload">Upload Notes Image</label>
+        <input type="file" id="notesImageUpload" name=" " accept="image/*" />
+        <label for="notesImageUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
+      </div>
+
+      <div class="form-group">
+        <label for="notesPdfUpload">Upload Notes PDF</label>
+        <input type="file" id="notesPdfUpload" name=" " accept="application/pdf" />
+        <label for="notesPdfUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
+      </div>
+
+      <button type="submit" name=" ">Save Flashcard</button>
+    </form>
+  </div>
+
+  <script>
+    // Difficulty button selection functionality
+    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+    
+    difficultyButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Remove selection from all buttons
+        difficultyButtons.forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        
+        // Add selection to clicked button
+        this.classList.add('selected');
+      });
+    });
+  </script>
+</body>
+</html>
