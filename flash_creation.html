@@ -142,6 +142,8 @@
       transition: 0.3s ease;
       border: none;
       color: #fff; /* Improved text visibility */
+      position: relative;
+      padding-left: 40px; /* Make space for the check icon */
     }
 
     .btn-easy {
@@ -158,6 +160,23 @@
 
     .difficulty-btn:hover {
       opacity: 0.8;
+    }
+
+    .difficulty-btn.selected {
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00f7ff;
+    }
+
+    .difficulty-btn .check-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .difficulty-btn.selected .check-icon {
+      opacity: 1;
     }
 
     button {
@@ -196,10 +215,10 @@
 
   <!-- Flashcard Form -->
   <div class="container">
-    <form>
+    <form method="post">
       <div class="form-group">
         <label for="subject">Subject</label>
-        <input type="text" id="subject" placeholder="Enter subject..." />
+        <input type="text" id="subject" name=" " placeholder="Enter subject..." />
       </div>
 
       <div class="form-group">
@@ -211,27 +230,52 @@
       <div class="form-group">
         <label>Difficulty Level</label>
         <div class="difficulty-btn-container">
-          <button type="button" class="difficulty-btn btn-easy">Easy</button>
-          <button type="button" class="difficulty-btn btn-medium">Medium</button>
-          <button type="button" class="difficulty-btn btn-difficult">Difficult</button>
+          <button type="button" class="difficulty-btn btn-easy">
+            <i class="fas fa-check check-icon"></i>
+            Easy
+          </button>
+          <button type="button" class="difficulty-btn btn-medium">
+            <i class="fas fa-check check-icon"></i>
+            Medium
+          </button>
+          <button type="button" class="difficulty-btn btn-difficult">
+            <i class="fas fa-check check-icon"></i>
+            Difficult
+          </button>
         </div>
       </div>
 
       <div class="form-group">
         <label for="notesImageUpload">Upload Notes Image</label>
-        <input type="file" id="notesImageUpload" accept="image/*" />
+        <input type="file" id="notesImageUpload" name=" " accept="image/*" />
         <label for="notesImageUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
       </div>
 
       <div class="form-group">
         <label for="notesPdfUpload">Upload Notes PDF</label>
-        <input type="file" id="notesPdfUpload" accept="application/pdf" />
+        <input type="file" id="notesPdfUpload" name=" " accept="application/pdf" />
         <label for="notesPdfUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
       </div>
 
-      <button type="submit">Save Flashcard</button>
+      <button type="submit" name=" ">Save Flashcard</button>
     </form>
   </div>
 
+  <script>
+    // Difficulty button selection functionality
+    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+    
+    difficultyButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        // Remove selection from all buttons
+        difficultyButtons.forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        
+        // Add selection to clicked button
+        this.classList.add('selected');
+      });
+    });
+  </script>
 </body>
 </html>
