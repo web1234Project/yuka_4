@@ -6,10 +6,10 @@
   <title>Create Flashcard - RecallIt</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <style>
+    /* [Your Original CSS – No changes made] */
     * {
       box-sizing: border-box;
     }
-
     body {
       margin: 0;
       padding: 0;
@@ -21,8 +21,6 @@
       flex-direction: column;
       align-items: center;
     }
-
-    /* Header Styling */
     .flashcard-header {
       display: flex;
       justify-content: space-between;
@@ -32,36 +30,29 @@
       box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
       width: 100%;
     }
-
     .logo-section {
       display: flex;
       align-items: center;
     }
-
     .logo {
       width: 40px;
       height: 40px;
       margin-right: 10px;
     }
-
     .logo-name {
       font-size: 24px;
       color: #00f7ff;
       font-weight: bold;
     }
-
     .home-section .home-link {
       font-size: 30px;
       color: #00f7ff;
       text-decoration: none;
       transition: color 0.3s ease;
     }
-
     .home-link:hover {
       color: #02c6d2;
     }
-
-    /* Flashcard Form Container */
     .container {
       width: 100%;
       max-width: 1700px;
@@ -71,23 +62,19 @@
       box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
       margin: 40px auto;
     }
-
     h2 {
       margin-bottom: 30px;
       text-align: center;
     }
-
     .form-group {
       margin-bottom: 25px;
     }
-
     label {
       display: block;
       margin-bottom: 10px;
       font-weight: 500;
       color: #ccc;
     }
-
     input[type="text"], textarea {
       width: 100%;
       padding: 12px;
@@ -97,16 +84,13 @@
       color: #fff;
       font-size: 15px;
     }
-
     textarea {
       resize: none;
       min-height: 80px;
     }
-
     input[type="file"] {
       display: none;
     }
-
     .import-btn {
       display: inline-block;
       padding: 10px 20px;
@@ -119,53 +103,36 @@
       transition: 0.3s ease;
       margin-top: 10px;
     }
-
     .import-btn:hover {
       background-color: #2c2c3e;
       border-color: #00d4ff;
       color: #00d4ff;
     }
-
     .difficulty-btn-container {
       display: flex;
-      gap: 2px; /* Reduced gap for tighter spacing */
+      gap: 2px;
       justify-content: center;
-      margin-top: 10px; /* Adjusted margin for compactness */
+      margin-top: 10px;
     }
-
     .difficulty-btn {
-      padding: 10px 20px; /* Adjusted padding for better proportions */
+      padding: 10px 20px;
       border-radius: 12px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
       transition: 0.3s ease;
       border: none;
-      color: #fff; /* Improved text visibility */
+      color: #fff;
       position: relative;
-      padding-left: 40px; /* Make space for the check icon */
+      padding-left: 40px;
     }
-
-    .btn-easy {
-      background-color: #00a859; /* Vibrant green for better contrast */
-    }
-
-    .btn-medium {
-      background-color: #ffaa00; /* Vibrant orange for better contrast */
-    }
-
-    .btn-difficult {
-      background-color: #e94b3c; /* Vibrant red for better contrast */
-    }
-
-    .difficulty-btn:hover {
-      opacity: 0.8;
-    }
-
+    .btn-easy { background-color: #00a859; }
+    .btn-medium { background-color: #ffaa00; }
+    .btn-difficult { background-color: #e94b3c; }
+    .difficulty-btn:hover { opacity: 0.8; }
     .difficulty-btn.selected {
       box-shadow: 0 0 0 2px #fff, 0 0 0 4px #00f7ff;
     }
-
     .difficulty-btn .check-icon {
       position: absolute;
       left: 15px;
@@ -174,11 +141,9 @@
       opacity: 0;
       transition: opacity 0.2s ease;
     }
-
     .difficulty-btn.selected .check-icon {
       opacity: 1;
     }
-
     button {
       padding: 12px 24px;
       background: linear-gradient(135deg, #0072ff, #00d4ff);
@@ -192,13 +157,57 @@
       display: block;
       margin: 20px auto 0;
     }
-
     button:hover {
       opacity: 0.9;
     }
   </style>
 </head>
 <body>
+
+<?php
+// PHP starts here
+$host = "localhost";
+$user = "root";
+$password = "";
+$dbname = "recallit";
+
+$conn = new mysqli("localhost", "root", "", "recallit_db");
+if ($conn->connect_error) {
+  die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  $subject = $_POST["subject"] ?? '';
+  $notes = $_POST["notes"] ?? '';
+  $question = $_POST["question"] ?? '';
+  $answer = $_POST["answer"] ?? '';
+  $difficulty = $_POST["difficulty"] ?? '';
+  
+  $imagePath = "";
+  $pdfPath = "";
+
+  if (isset($_FILES['notesImageUpload']) && $_FILES['notesImageUpload']['error'] === UPLOAD_ERR_OK) {
+    $imagePath = "uploads/" . basename($_FILES['notesImageUpload']['name']);
+    move_uploaded_file($_FILES['notesImageUpload']['tmp_name'], $imagePath);
+  }
+
+  if (isset($_FILES['notesPdfUpload']) && $_FILES['notesPdfUpload']['error'] === UPLOAD_ERR_OK) {
+    $pdfPath = "uploads/" . basename($_FILES['notesPdfUpload']['name']);
+    move_uploaded_file($_FILES['notesPdfUpload']['tmp_name'], $pdfPath);
+  }
+
+  $stmt = $conn->prepare("INSERT INTO flashcards (subject, notes, difficulty, question, answer, image_path, pdf_path) VALUES (?, ?, ?, ?, ?, ?, ?)");
+  $stmt->bind_param("sssssss", $subject, $notes, $difficulty, $question, $answer, $imagePath, $pdfPath);
+
+  if ($stmt->execute()) {
+    echo "<script>alert('Flashcard saved successfully!');</script>";
+  } else {
+    echo "<script>alert('Error saving flashcard');</script>";
+  }
+
+  $stmt->close();
+}
+?>
 
   <!-- Header -->
   <div class="flashcard-header">
@@ -215,18 +224,17 @@
 
   <!-- Flashcard Form -->
   <div class="container">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="form-group">
         <label for="subject">Subject</label>
-        <input type="text" id="subject" name=" " placeholder="Enter subject..." />
+        <input type="text" id="subject" name="subject" placeholder="Enter subject..." />
       </div>
 
       <div class="form-group">
         <label for="notes">Notes</label>
-        <textarea id="notes" placeholder="Any extra notes..."></textarea>
+        <textarea id="notes" name="notes" placeholder="Any extra notes..."></textarea>
       </div>
 
-      <!-- Difficulty Level Section -->
       <div class="form-group">
         <label>Difficulty Level</label>
         <div class="difficulty-btn-container">
@@ -243,49 +251,45 @@
             Difficult
           </button>
         </div>
+        <input type="hidden" name="difficulty" id="difficultyInput">
       </div>
-      <!-- Question Field -->
+
       <div class="form-group">
         <label for="question">Question</label>
         <input type="text" id="question" name="question" placeholder="Enter question..." />
       </div>
 
-      <!-- Answer Field -->
       <div class="form-group">
         <label for="answer">Answer</label>
         <textarea id="answer" name="answer" placeholder="Enter answer..."></textarea>
       </div>
 
-
       <div class="form-group">
         <label for="notesImageUpload">Upload Notes Image</label>
-        <input type="file" id="notesImageUpload" name=" " accept="image/*" />
+        <input type="file" id="notesImageUpload" name="notesImageUpload" accept="image/*" />
         <label for="notesImageUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
       </div>
 
       <div class="form-group">
         <label for="notesPdfUpload">Upload Notes PDF</label>
-        <input type="file" id="notesPdfUpload" name=" " accept="application/pdf" />
+        <input type="file" id="notesPdfUpload" name="notesPdfUpload" accept="application/pdf" />
         <label for="notesPdfUpload" class="import-btn"><i class="fas fa-plus"></i> Import</label>
       </div>
 
-      <button type="submit" name=" ">Save Flashcard</button>
+      <button type="submit" name="save">Save Flashcard</button>
     </form>
   </div>
 
   <script>
     // Difficulty button selection functionality
     const difficultyButtons = document.querySelectorAll('.difficulty-btn');
-    
+    const hiddenInput = document.getElementById('difficultyInput');
+
     difficultyButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        // Remove selection from all buttons
-        difficultyButtons.forEach(btn => {
-          btn.classList.remove('selected');
-        });
-        
-        // Add selection to clicked button
+      button.addEventListener('click', function () {
+        difficultyButtons.forEach(btn => btn.classList.remove('selected'));
         this.classList.add('selected');
+        hiddenInput.value = this.textContent.trim();
       });
     });
   </script>
