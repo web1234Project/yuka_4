@@ -1,3 +1,8 @@
+<?php
+// Start session if needed (e.g., for user login handling in future)
+session_start();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* General Styling */
+        /* Paste all your CSS from the previous HTML here (unchanged) */
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
@@ -17,8 +22,6 @@
             height: 100vh;
             overflow: hidden;
         }
-
-        /* Full-width Header */
         header {
             width: 100%;
             background: #121212;
@@ -33,18 +36,14 @@
             z-index: 1000;
             height:75px;
         }
-
         .logo-container {
             display: flex;
             align-items: center;
         }
-
         .logo-container img {
             height: 60px;
             margin-right: 10px;
         }
-
-        /* Sidebar */
         .sidebar {
             width: 230px;
             background: #181818;
@@ -52,13 +51,12 @@
             position: fixed;
             top: 0;
             left: 0;
-            padding-top: 150px; /* Ensures sidebar items start below the header */
+            padding-top: 150px;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
             overflow: hidden;
         }
-
         .sidebar a {
             display: flex;
             align-items: center;
@@ -71,21 +69,16 @@
             font-weight: bold;
             transition: 0.3s;
         }
-
         .sidebar a:hover {
             background: #0072ff;
         }
-
         .sidebar a i {
             margin-right: 10px;
         }
-
-        /* Fix for Dashboard link */
         .sidebar a:first-child {
-            margin-top: 0; 
+            margin-top: 0;
             padding-top: 10px;
         }
-
         .sidebar-divider {
             width: 80%;
             height: 1px;
@@ -93,41 +86,33 @@
             border: none;
             margin: 10px auto;
         }
-
-        /* Main Content */
         .main-content {
             flex-grow: 1;
             margin-left: 230px;
-            margin-top: 90px; /* Adjust this to match the header height */
+            margin-top: 90px;
             padding: 2rem;
             width: calc(100% - 230px);
             text-align: left;
         }
-
-        
-
         .card-container {
-             display: flex;
-            flex-wrap: wrap;         /* allows cards to wrap if screen is small */
-            gap: 40px;               /* space between cards */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
             margin-top: 20px;
             padding: 20px;
-            background-color: #1e1e1e; /* or any dark shade you like */
-            border-radius: 12px;     /* rounded corners */
-            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.8); /* glowing effect */
-            width: 100%;             /* full width of content area */
-            max-width: 1190px;       /* restrict it to a neat width */
-            margin-left:0;
-            margin-right:0px;
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.8);
+            width: 100%;
+            max-width: 1190px;
+            margin-left: 0;
+            margin-right: 0px;
             height: 480px;
             transition: transform 0.3s ease;
         }
-
         .card-container:hover {
             transform: scale(1.02);
         }
-
-        
         .btn {
             background-color: #0072ff;
             color: white;
@@ -138,37 +123,27 @@
             cursor: pointer;
             margin-left: 25px;
             font-size: medium;
-               
         }
-        .btn:hover{
+        .btn:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
         }
-
-       
-
-
-        /* Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
                 width: 60px;
                 align-items: center;
             }
-
             .sidebar a {
                 justify-content: center;
                 padding: 15px;
             }
-
             .sidebar a span {
                 display: none;
             }
-
             .main-content {
                 margin-left: 60px;
                 width: calc(100% - 60px);
             }
-
             header {
                 width: calc(100% - 60px);
                 left: 60px;
@@ -180,16 +155,16 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <a href="user-dashboard.html" class="dashboard-link"><i class="fas fa-home"></i><span> Dashboard</span></a>
-        <a href="flash_creation.html"><i class="fas fa-plus-circle"></i><span> Create Flashcards</span></a>
-        <a href="my-flashcard.html"><i class="fas fa-folder-open"></i><span> My Flashcards</span></a>
-        <a href="quiz.html"><i class="fas fa-question-circle"></i><span> Take Quiz</span></a>
-        <a href="progress.html"><i class="fas fa-user"></i><span> Progress</span></a>
-        <a href="study-guide.html"><i class="fas fa-book"></i><span> Study Guide</span></a>
+        <a href="user-dashboard.php" class="dashboard-link"><i class="fas fa-home"></i><span> Dashboard</span></a>
+        <a href="flash_creation.php"><i class="fas fa-plus-circle"></i><span> Create Flashcards</span></a>
+        <a href="my-flashcard.php"><i class="fas fa-folder-open"></i><span> My Flashcards</span></a>
+        <a href="quiz.php"><i class="fas fa-question-circle"></i><span> Take Quiz</span></a>
+        <a href="progress.php"><i class="fas fa-user"></i><span> Progress</span></a>
+        <a href="study-guide.php"><i class="fas fa-book"></i><span> Study Guide</span></a>
         <hr class="sidebar-divider">
-        <a href="notification.html"><i class="fas fa-bell"></i><span> Notification</span></a>  <!-- Fixed Icon -->
-        <a href="profile.html"><i class="fas fa-user"></i><span> Profile</span></a>  <!-- Fixed Icon -->
-        <a href="logout.html"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>  <!-- Fixed Icon -->
+        <a href="notification.php"><i class="fas fa-bell"></i><span> Notification</span></a>
+        <a href="profile.php"><i class="fas fa-user"></i><span> Profile</span></a>
+        <a href="logout.php"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
     </div>
 
     <!-- Header -->
@@ -207,13 +182,11 @@
             <div class="card">
                 <h1 style="margin-top: 150px; color:rgb(74, 198, 247);">🧠 Create Flashcards, Conquer Scores!</h1>
                 <p style="font-size:large;margin-left: 25px;">Quickly access and manage your saved cards.</p>
-                <button class="btn"><a href="flash_creation.html"style="text-decoration:none;color:white;">Get Started</a></button>
+                <button class="btn"><a href="flash_creation.php" style="text-decoration:none;color:white;">Get Started</a></button>
             </div>
-             <div class="card">
-                <img style="width:320px; height:400px;margin-top: 50px;margin-left: 150px;box-shadow: 0 8px 20px rgba(0, 212, 255, 0.8);border-radius: 5px;" src="flashcard-graphic.png">
-                
+            <div class="card">
+                <img style="width:320px; height:400px;margin-top: 50px;margin-left: 150px;box-shadow: 0 8px 20px rgba(0, 212, 255, 0.8);border-radius: 5px;" src="flashcard-graphic.png" alt="Flashcard Graphic">
             </div>
-           
         </div>
     </div>
 

@@ -49,7 +49,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 60px;
+      margin-right: 30px;
     }
 
     .home-link {
@@ -225,7 +225,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <span class="logo-name">RecallIt</span>
     </div>
     <div class="home-section">
-      <a href="user-dashboard.html" class="home-link">
+      <a href="user-dashboard.php" class="home-link">
         <i class="fas fa-home"></i>
       </a>
     </div>

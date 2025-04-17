@@ -70,12 +70,20 @@ $flashcards = $result->fetch_all(MYSQLI_ASSOC);
       color: #00f7ff;
     }
 
-    .home-section .home-link {
+    .home-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 30px;
+    }
+
+    .home-link {
       font-size: 30px;
       color: #00f7ff;
       text-decoration: none;
       transition: color 0.3s ease;
     }
+
     .home-link:hover {
       color: #02c6d2;
     }
@@ -161,7 +169,7 @@ $flashcards = $result->fetch_all(MYSQLI_ASSOC);
     <span class="logo-name">RecallIt</span>
   </div>
   <div class="home-section">
-    <a href="user-dashboard.html" class="home-link">
+    <a href="user-dashboard.php" class="home-link">
       <i class="fa-solid fa-house"></i>
     </a>
   </div>
