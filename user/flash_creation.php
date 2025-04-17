@@ -12,23 +12,23 @@
     }
     body {
       margin: 0;
-      padding: 0;
       font-family: 'Poppins', sans-serif;
       background: #0e0e10;
       color: #fff;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
     .flashcard-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 20px;
       background-color: #1a1a1a;
       box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
-      width: 100%;
+      z-index: 1000;
     }
     .logo-section {
       display: flex;
@@ -41,23 +41,32 @@
     }
     .logo-name {
       font-size: 24px;
-      color: #00f7ff;
       font-weight: bold;
+      color: #00f7ff;
+      
     }
-    .home-section .home-link {
+    .home-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 60px;
+    }
+
+    .home-link {
       font-size: 30px;
       color: #00f7ff;
       text-decoration: none;
       transition: color 0.3s ease;
     }
+
     .home-link:hover {
       color: #02c6d2;
     }
     .container {
-      width: 100%;
+      width: 450%;
       max-width: 1700px;
       background: #1a1a1a;
-      padding: 40px 30px;
+      padding: 70px 30px;
       border-radius: 15px;
       box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
       margin: 40px auto;

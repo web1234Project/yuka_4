@@ -1,34 +1,58 @@
+<?php
+// Start session
+session_start();
+
+// Database connection
+$host = 'localhost';
+$db = 'recallit_db';
+$user = 'root'; // your DB username
+$pass = '';     // your DB password
+
+$conn = new mysqli("localhost", "root", "", "recallit_db");
+
+// Check connection
+if ($conn->connect_error) {
+  die("Connection failed: " . $conn->connect_error);
+}
+
+// Fetch flashcards for logged-in user
+$userId = $_SESSION['user_id'] ?? 1; // fallback to user 1 for now
+$sql = "SELECT * FROM flashcards WHERE user_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$flashcards = $result->fetch_all(MYSQLI_ASSOC);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>My Flashcards - RecallIt</title>
-  <!-- Latest Font Awesome CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
     body {
       margin: 0;
+      padding: 0;
       font-family: 'Poppins', sans-serif;
       background: #0e0e10;
       color: #fff;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    /* Header Styling */
     .flashcard-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 30px;
+      padding: 20px;
       background-color: #1a1a1a;
       box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
-      z-index: 1000;
+      width: 100%;
     }
-
     .logo-section {
       display: flex;
       align-items: center;
@@ -46,25 +70,17 @@
       color: #00f7ff;
     }
 
-    .home-section {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 60px;
-    }
-
-    .home-link {
+    .home-section .home-link {
       font-size: 30px;
       color: #00f7ff;
       text-decoration: none;
       transition: color 0.3s ease;
     }
-
     .home-link:hover {
       color: #02c6d2;
     }
 
-    /* Main Container */
+
     .container {
       margin: 120px auto 40px auto;
       width: 90%;
@@ -95,7 +111,7 @@
       max-width: 1700px;
       background: #1f1f2e;
       border-radius: 12px;
-      padding:40px 30px;
+      padding: 40px 30px;
       position: relative;
       box-shadow: 0 4px 10px rgba(0, 212, 255, 0.2);
     }
@@ -139,61 +155,39 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="flashcard-header">
-    <div class="logo-section">
-      <img src="logo.png" alt="RecallIt Logo" class="logo" />
-      <span class="logo-name">RecallIt</span>
-    </div>
-    <div class="home-section">
-      <a href="user-dashboard.html" class="home-link">
-        <i class="fa-solid fa-house"></i>
-      </a>
-    </div>
+<div class="flashcard-header">
+  <div class="logo-section">
+    <img src="logo.png" alt="RecallIt Logo" class="logo" />
+    <span class="logo-name">RecallIt</span>
   </div>
-
-  <!-- Main Content Container -->
-  <div class="container">
-    <h2>My Flashcards</h2>
-    <div id="flashcardWrapper" class="flashcard-container"></div>
-    <p id="noFlashcardsMsg" class="no-flashcards" style="display: none;">No flashcards created yet.</p>
+  <div class="home-section">
+    <a href="user-dashboard.html" class="home-link">
+      <i class="fa-solid fa-house"></i>
+    </a>
   </div>
+</div>
 
-  <script>
-    const flashcards = [];
+<div class="container">
+  <h2>My Flashcards</h2>
 
-    const flashcardWrapper = document.getElementById('flashcardWrapper');
-    const noFlashcardsMsg = document.getElementById('noFlashcardsMsg');
-
-    function displayFlashcards() {
-      flashcardWrapper.innerHTML = ''; // clear old cards
-
-      if (flashcards.length === 0) {
-        noFlashcardsMsg.style.display = 'block';
-        flashcardWrapper.style.display = 'none';
-      } else {
-        noFlashcardsMsg.style.display = 'none';
-        flashcardWrapper.style.display = 'grid';
-
-        flashcards.forEach((card) => {
-          const cardEl = document.createElement('div');
-          cardEl.className = 'flashcard';
-          cardEl.innerHTML = `
-            <div class="actions">
-              <i class="fas fa-edit"></i>
-              <i class="fas fa-trash-alt"></i>
-            </div>
-            <h3>${card.subject}</h3>
-            <p><strong>Created:</strong> ${card.date}</p>
-            <p><strong>Notes:</strong> ${card.notes || 'No notes added'}</p>
-          `;
-          flashcardWrapper.appendChild(cardEl);
-        });
-      }
-    }
-
-    displayFlashcards();
-  </script>
+  <?php if (count($flashcards) > 0): ?>
+    <div class="flashcard-container">
+      <?php foreach ($flashcards as $card): ?>
+        <div class="flashcard">
+          <div class="actions">
+            <i class="fas fa-edit" title="Edit"></i>
+            <i class="fas fa-trash-alt" title="Delete"></i>
+          </div>
+          <h3><?= htmlspecialchars($card['subject']) ?></h3>
+          <p><strong>Created:</strong> <?= htmlspecialchars(date("d M Y, h:i A", strtotime($card['created_at']))) ?></p>
+          <p><strong>Notes:</strong> <?= htmlspecialchars($card['notes'] ?: 'No notes added') ?></p>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php else: ?>
+    <p class="no-flashcards">No flashcards created yet.</p>
+  <?php endif; ?>
+</div>
 
 </body>
 </html>
