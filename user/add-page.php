@@ -16,7 +16,7 @@
               throw new Exception("Please select a file to upload");
           }
 
-          $targetDir = "uploads/";
+          $targetDir = "../uploads/";
           if (!is_dir($targetDir)) {
               mkdir($targetDir, 0777, true);
           }
