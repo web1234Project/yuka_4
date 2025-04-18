@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             mysqli_stmt_bind_param($insertStmt, "sss", $username, $email, $hashedPassword);
 
             if (mysqli_stmt_execute($insertStmt)) {
-                header("Location: confirmation.html");
+                header("Location: confirmation.php");
                 exit();
             } else {
                 $errors['email'] = "Database error: " . mysqli_error($conn);

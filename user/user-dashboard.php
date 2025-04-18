@@ -1,6 +1,19 @@
 <?php
 // Start session if needed (e.g., for user login handling in future)
 session_start();
+require_once '../common/config.php'; // Make sure this path is correct
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+$stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$username = $user['username'] ?? 'User';
+
 ?>
 
 <!DOCTYPE html>
@@ -177,7 +190,9 @@ session_start();
 
     <!-- Main Content -->
     <div class="main-content">
-        <h2 style="color:rgb(74, 198, 247);margin-top: 5px;margin-bottom: 10px;">Welcome to Your Dashboard</h2>
+            <h2 style="color:rgb(74, 198, 247);margin-top: 5px;margin-bottom: 10px;">
+            Welcome, <?php echo htmlspecialchars($username); ?>!
+        </h2>
         <div class="card-container">
             <div class="card">
                 <h1 style="margin-top: 150px; color:rgb(74, 198, 247);">🧠 Create Flashcards, Conquer Scores!</h1>

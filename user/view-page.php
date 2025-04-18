@@ -12,7 +12,7 @@ if (isset($_GET['delete'])) {
   $result = $conn->query($getFileQuery);
   if ($result && $result->num_rows > 0) {
     $row = $result->fetch_assoc();
-    $filePath = 'uploads/' . $row['file_name'];
+    $filePath = '../uploads/' . $row['file_name'];
     if (file_exists($filePath)) {
       unlink($filePath); // delete file from folder
     }
@@ -203,7 +203,7 @@ $result = $conn->query($sql);
               echo "<td>" . htmlspecialchars($row['file_name']) . "</td>";
               echo "<td>" . pathinfo($row['file_name'], PATHINFO_EXTENSION) . "</td>";
               echo "<td>
-                      <form method='get' action='uploads/" . urlencode($row['file_name']) . "' target='_blank' style='display:inline-block;'>
+                      <form method='get' action='../uploads/" . urlencode($row['file_name']) . "' target='_blank' style='display:inline-block;'>
                         <button type='submit' class='action-btn'>View</button>
                       </form>
                       <form method='get' onsubmit='return confirm(\"Are you sure you want to delete this file?\")' style='display:inline-block;'>

@@ -1,4 +1,6 @@
 <?php
+session_start(); // ✅ Start the session
+
 require_once __DIR__ . '/../common/config.php';
 
 $errors = [
@@ -16,21 +18,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Validation
     if (!$username) {
         $errors['username'] = "Username is required.";
-    }
-    elseif (!$password) {
+    } elseif (!$password) {
         $errors['password'] = "Password is required.";
-    } 
+    }
 
     // Database authentication
     if (empty(array_filter($errors))) {
-        $stmt = mysqli_prepare($conn, "SELECT password FROM users WHERE username = ?");
+        // ✅ Also select the user id
+        $stmt = mysqli_prepare($conn, "SELECT id, password FROM users WHERE username = ?");
         mysqli_stmt_bind_param($stmt, "s", $username);
         mysqli_stmt_execute($stmt);
-        mysqli_stmt_bind_result($stmt, $hashedPassword);
+        mysqli_stmt_bind_result($stmt, $userId, $hashedPassword);
 
         if (mysqli_stmt_fetch($stmt)) {
             if (password_verify($password, $hashedPassword)) {
-                // Successful login
+                // ✅ Set user id in session
+                $_SESSION['user_id'] = $userId;
+
+                // ✅ Redirect to dashboard
                 header("Location: user-dashboard.php");
                 exit();
             } else {
@@ -44,6 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 

@@ -53,7 +53,7 @@
     <div class="container">
         <h2>Registration Successful!</h2>
         <p>Your account has been created successfully.</p>
-        <a href="login.html" class="cta-button">Go to Login</a>
+        <a href="login.php" class="cta-button">Go to Login</a>
     </div>
 </body>
 </html>
