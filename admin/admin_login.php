@@ -1,12 +1,71 @@
+<?php
+require_once __DIR__ . '/../common/config.php';
+
+// Initialize errors
+$errors = [
+    'email' => '',
+    'password' => '',
+];
+$success = false;
+$email = '';
+
+// Check if the request method is POST
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Input sanitization
+    $email = htmlspecialchars(trim($_POST['email'] ?? ''));
+    $password = trim($_POST['password'] ?? '');
+
+    // Validation
+    if (!$email) {
+        $errors['email'] = "Email is required.";
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = "Invalid email format.";
+    }
+    if (!$password) {
+        $errors['password'] = "Password is required.";
+    }
+
+    // Database authentication
+    if (empty(array_filter($errors))) { // Proceed only if there are no errors
+        $stmt = mysqli_prepare($conn, "SELECT password FROM admin WHERE email = ?");
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt, $dbPassword);
+
+        if (mysqli_stmt_fetch($stmt)) {
+            // Compare the plain-text password with the database value
+            if ($password === $dbPassword) {
+                // Successful login
+                mysqli_stmt_close($stmt);
+                mysqli_close($conn); // Close database connection
+                header("Location: admin_index.php");
+                exit();
+            } else {
+                // Show unified error below the password field
+                $errors['password'] = "Invalid email or password.";
+            }
+        } else {
+            // Show unified error below the password field
+            $errors['password'] = "Invalid email or password.";
+        }
+
+        mysqli_stmt_close($stmt);
+    } else {
+        $errors['email'] = "Database error. Please try again.";
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Recallit</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Original CSS from your code */
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
@@ -41,7 +100,6 @@
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0, 212, 255, 0.5);
-            
         }
 
         .logo {
@@ -49,7 +107,6 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 50px;
-    
         }
         .logos {
             display: flex;
@@ -62,17 +119,16 @@
             margin-right: 15px;
         }
 
-        .image{
-            
-            margin-left: 85px; 
-            margin-right: 15px; 
+        .image {
+            margin-left: 85px;
+            margin-right: 15px;
             margin-top: 30px;
         }
-        .heading{
+        .heading {
             background: linear-gradient(135deg, #00d4ff, #0072ff);
             background-clip: text;
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; 
+            -webkit-text-fill-color: transparent;
             margin-top: 55px;
         }
 
@@ -96,10 +152,9 @@
             gap: 1rem;
         }
 
-        
         input {
             width: 90%;
-            padding:15px;
+            padding: 15px;
             margin-bottom: 1rem;
             border: none;
             border-radius: 8px;
@@ -132,81 +187,54 @@
             transform: scale(1.05);
         }
 
-            
-
-        .link {
-            margin-top: 1rem;
-            color: #aaa;
-        }
-
-        .link a {
+        .error-message {
             color: #00d4ff;
-            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            text-align: left;
+            width: 90%;
+        }
+        .error-message {
+            color: #00d4ff;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            text-align: left;
+            width: 90%;
         }
        
     </style>
 </head>
-
 <body>
     <header>
         <div class="logos">
             <img src="logo.png" alt="Recallit" class="image" width="50px" height="50px">
             <h1 class="heading">Recallit</h1>
         </div>
-       
     </header>
-
     <div class="container">
         <div class="logo">
             <img src="logo.png" alt="Recallit Logo">
             <h1>Recallit</h1>
         </div>
-        <form id="loginForm" action="user-dashboard.html" method="POST">
-            <input type="text" id="username" name="username" placeholder="Username" required>
-            <p class="error" id="usernameError">Username is required</p>
+        <form id="loginForm" method="POST" action="">
+            <!-- Email Input -->
+            <input type="email" name="email" id="email" placeholder="Email"
+                   value="<?= htmlspecialchars($email) ?>" required>
+            <?php if (!empty($errors['email'])): ?>
+                <div class="error-message"><?= htmlspecialchars($errors['email']) ?></div>
+            <?php endif; ?>
 
-            <input type="password" id="password" name="password" placeholder="Password" required>
-            <p class="error" id="passwordError">Password must be at least 6 characters</p>
+            <!-- Password Input -->
+            <input type="password" name="password" id="password" placeholder="Password" required>
+            <?php if (!empty($errors['password'])): ?>
+                <div class="error-message"><?= htmlspecialchars($errors['password']) ?></div>
+            <?php endif; ?>
 
-            <button type="button" class="cta-button" onclick="validateForm()">Login</button>
+            <br>
+
+            <!-- Submit Button -->
+            <button type="submit" class="cta-button">Login</button>
         </form>
-        <p class="link">Don't have an account? <a href="register.html">Register here</a></p>
     </div>
-
-    <script>
-        function validateForm() {
-            let valid = true;
-
-            // Get input values
-            let username = document.getElementById("username").value.trim();
-            let password = document.getElementById("password").value.trim();
-
-            // Get error elements
-            let usernameError = document.getElementById("usernameError");
-            let passwordError = document.getElementById("passwordError");
-
-            // Reset previous error messages
-            usernameError.style.display = "none";
-            passwordError.style.display = "none";
-
-            // Validate username
-            if (username === "") {
-                usernameError.style.display = "block";
-                valid = false;
-            }
-
-            // Validate password length
-            if (password.length < 6) {
-                passwordError.style.display = "block";
-                valid = false;
-            }
-
-            // If valid, submit the form
-            if (valid) {
-                document.getElementById("loginForm").submit();
-            }
-        }
-    </script>
 </body>
-
 </html>

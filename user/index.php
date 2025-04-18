@@ -103,15 +103,15 @@
             <h1>Recallit</h1>
         </div>
         <nav>
-            <a href="login.html">Login</a>
-            <a href="register.html" style="margin-right: 45px;">Register</a>
+            <a href="login.php">Login</a>
+            <a href="register.php" style="margin-right: 45px;">Register</a>
         </nav>
     </header>
 
     <div class="container">
         <h2>Remembering is easier with Recallit</h2>
         <p>Create, share, and test yourself with intelligent flashcards.</p>
-        <a href="register.html" class="cta-button">Get Started</a>
+        <a href="register.php" class="cta-button">Get Started</a>
     </div>
 </body>
 
