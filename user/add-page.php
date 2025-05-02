@@ -1,5 +1,15 @@
 <?php
-  include '../common/config.php';
+  require_once '../common/config.php';
+  session_start();
+
+// Check if the user is logged in (make sure user_id is set in the session)
+if (!isset($_SESSION['user_id'])) {
+    // Redirect to login page if not logged in
+    header('Location: login.php');
+    exit();
+}
+// Get the logged-in user's ID from the session
+$user_id = $_SESSION['user_id']; 
 
   $upload_message = '';
 
@@ -28,15 +38,14 @@
               throw new Exception("Failed to upload file");
           }
 
-          $sql = "INSERT INTO subjects (subject_name, file_name) VALUES (?, ?)";
+          $sql = "INSERT INTO subjects (user_id, subject_name, file_name) VALUES (?, ?, ?)";
           $stmt = $conn->prepare($sql);
-
+         
+          
           if (!$stmt) {
               throw new Exception("Prepare failed: " . $conn->error);
           }
-
-          $stmt->bind_param("ss", $subject_name, $fileName);
-
+          $stmt->bind_param("iss", $user_id, $subject_name, $fileName);
           if (!$stmt->execute()) {
               throw new Exception("Execute failed: " . $stmt->error);
           }
@@ -179,10 +188,10 @@
         text-decoration: none;
       }
 
-      #selected-file-name {
+      /* #selected-file-name {
         margin-top: 8px;
         font-style: italic;
-      }
+      } */
 
       input[type="file"] {
         display: none;
@@ -218,7 +227,7 @@
         <img src="logo.png" alt="RecallIt Logo" />
         <span class="logo-name">RecallIt</span>
       </div>
-      <a href="user-dashboard.html" class="home-link">
+      <a href="user-dashboard.php" class="home-link">
         <i class="fas fa-home"></i>
       </a>
     </div>
@@ -288,7 +297,6 @@
 
     fileInput.addEventListener('change', function () {
         if (this.files.length > 0) {
-            fileNameDisplay.textContent = "Selected file: " + this.files[0].name;
             fileLabelText.textContent = this.files[0].name; // Update label with filename
             fileError.textContent = "";
             fileLabel.style.borderColor = '#00f7ff';

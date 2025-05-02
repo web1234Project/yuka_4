@@ -18,6 +18,7 @@ $username = $user['username'] ?? 'User';
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,6 +36,7 @@ $username = $user['username'] ?? 'User';
             height: 100vh;
             overflow: hidden;
         }
+
         header {
             width: 100%;
             background: #121212;
@@ -47,16 +49,19 @@ $username = $user['username'] ?? 'User';
             top: 0;
             left: 0;
             z-index: 1000;
-            height:75px;
+            height: 75px;
         }
+
         .logo-container {
             display: flex;
             align-items: center;
         }
+
         .logo-container img {
             height: 60px;
             margin-right: 10px;
         }
+
         .sidebar {
             width: 230px;
             background: #181818;
@@ -70,6 +75,7 @@ $username = $user['username'] ?? 'User';
             align-items: flex-start;
             overflow: hidden;
         }
+
         .sidebar a {
             display: flex;
             align-items: center;
@@ -82,16 +88,20 @@ $username = $user['username'] ?? 'User';
             font-weight: bold;
             transition: 0.3s;
         }
+
         .sidebar a:hover {
             background: #0072ff;
         }
+
         .sidebar a i {
             margin-right: 10px;
         }
+
         .sidebar a:first-child {
             margin-top: 0;
             padding-top: 10px;
         }
+
         .sidebar-divider {
             width: 80%;
             height: 1px;
@@ -99,6 +109,7 @@ $username = $user['username'] ?? 'User';
             border: none;
             margin: 10px auto;
         }
+
         .main-content {
             flex-grow: 1;
             margin-left: 230px;
@@ -107,6 +118,7 @@ $username = $user['username'] ?? 'User';
             width: calc(100% - 230px);
             text-align: left;
         }
+
         .card-container {
             display: flex;
             flex-wrap: wrap;
@@ -123,9 +135,11 @@ $username = $user['username'] ?? 'User';
             height: 480px;
             transition: transform 0.3s ease;
         }
+
         .card-container:hover {
             transform: scale(1.02);
         }
+
         .btn {
             background-color: #0072ff;
             color: white;
@@ -137,26 +151,32 @@ $username = $user['username'] ?? 'User';
             margin-left: 25px;
             font-size: medium;
         }
+
         .btn:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
         }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 60px;
                 align-items: center;
             }
+
             .sidebar a {
                 justify-content: center;
                 padding: 15px;
             }
+
             .sidebar a span {
                 display: none;
             }
+
             .main-content {
                 margin-left: 60px;
                 width: calc(100% - 60px);
             }
+
             header {
                 width: calc(100% - 60px);
                 left: 60px;
@@ -164,6 +184,7 @@ $username = $user['username'] ?? 'User';
         }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar -->
@@ -172,10 +193,12 @@ $username = $user['username'] ?? 'User';
         <a href="flash_creation.php"><i class="fas fa-plus-circle"></i><span> Create Flashcards</span></a>
         <a href="my-flashcard.php"><i class="fas fa-folder-open"></i><span> My Flashcards</span></a>
         <a href="quiz.php"><i class="fas fa-question-circle"></i><span> Take Quiz</span></a>
-        <a href="progress.php"><i class="fas fa-user"></i><span> Progress</span></a>
+        <a href="subpro.php"><i class="fas fa-user"></i><span> Progress</span></a>
         <a href="study-guide.php"><i class="fas fa-book"></i><span> Study Guide</span></a>
+        <a href="report.php"><i class="fa-regular fa-hand"></i><span> Report </span></a>
+        <a href="chatlistscreen.php"><i class="fas fa-message"></i><span> Chat </span></a>
         <hr class="sidebar-divider">
-        <a href="notification.php"><i class="fas fa-bell"></i><span> Notification</span></a>
+        <a href="notifications.php"><i class="fas fa-bell"></i><span> Notification</span></a>
         <a href="profile.php"><i class="fas fa-user"></i><span> Profile</span></a>
         <a href="logout.php"><i class="fas fa-sign-out-alt"></i><span> Logout</span></a>
     </div>
@@ -190,7 +213,7 @@ $username = $user['username'] ?? 'User';
 
     <!-- Main Content -->
     <div class="main-content">
-            <h2 style="color:rgb(74, 198, 247);margin-top: 5px;margin-bottom: 10px;">
+        <h2 style="color:rgb(74, 198, 247);margin-top: 5px;margin-bottom: 10px;">
             Welcome, <?php echo htmlspecialchars($username); ?>!
         </h2>
         <div class="card-container">
@@ -206,4 +229,5 @@ $username = $user['username'] ?? 'User';
     </div>
 
 </body>
+
 </html>

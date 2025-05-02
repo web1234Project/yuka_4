@@ -6,8 +6,17 @@ $errors = [
     'email' => '',
     'password' => '',
 ];
-$success = false;
 $email = '';
+
+// Start the session at the very beginning of the script
+session_start();
+
+// Check if the user is already logged in
+// if (isset($_SESSION['admin_id'])) {  <-- REMOVE THIS LINE
+//     header("Location: admin_dashboard.php");
+//     exit();
+// }
+
 
 // Check if the request method is POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -28,31 +37,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Database authentication
     if (empty(array_filter($errors))) { // Proceed only if there are no errors
-        $stmt = mysqli_prepare($conn, "SELECT password FROM admin WHERE email = ?");
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_bind_result($stmt, $dbPassword);
+        try {
+            $stmt = mysqli_prepare($conn, "SELECT id, password, email FROM admin WHERE email = ?");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "s", $email);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_bind_result($stmt, $id, $dbPassword, $dbEmail);
+                mysqli_stmt_fetch($stmt);
 
-        if (mysqli_stmt_fetch($stmt)) {
-            // Compare the plain-text password with the database value
-            if ($password === $dbPassword) {
-                // Successful login
+                if ($dbPassword) {
+                    if (password_verify($password, $dbPassword)) {
+                        // Successful login
+                        $_SESSION['admin_id'] = $id;
+                        $_SESSION['admin_email'] = $dbEmail;
+                        mysqli_stmt_close($stmt);
+                        mysqli_close($conn);
+                        header("Location: admin_index.php");
+                        exit();
+                    } else {
+                        $errors['password'] = "Invalid email or password.";
+                    }
+                } else {
+                    $errors['password'] = "Invalid email or password.";
+                }
                 mysqli_stmt_close($stmt);
-                mysqli_close($conn); // Close database connection
-                header("Location: admin_index.php");
-                exit();
             } else {
-                // Show unified error below the password field
-                $errors['password'] = "Invalid email or password.";
+                // Log the error
+                error_log("Failed to prepare statement: " . mysqli_error($conn));
+                $errors['email'] = "Database error. Please try again.";
             }
-        } else {
-            // Show unified error below the password field
-            $errors['password'] = "Invalid email or password.";
+        } catch (Exception $e) {
+            //catch any other exceptions
+            error_log("Exception: " . $e->getMessage());
+            $errors['email'] = "Database error. Please try again.";
+        } finally {
+            mysqli_close($conn);
         }
-
-        mysqli_stmt_close($stmt);
-    } else {
-        $errors['email'] = "Database error. Please try again.";
     }
 }
 
@@ -80,6 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             padding: 20px;
             overflow: hidden;
         }
+
         header {
             width: 100%;
             height: 75px;
@@ -108,6 +129,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             justify-content: center;
             margin-bottom: 50px;
         }
+
         .logos {
             display: flex;
             align-items: center;
@@ -124,6 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             margin-right: 15px;
             margin-top: 30px;
         }
+
         .heading {
             background: linear-gradient(135deg, #00d4ff, #0072ff);
             background-clip: text;
@@ -142,8 +165,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 1.8rem;
             background: linear-gradient(135deg, #00d4ff, #0072ff);
             background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         form {
@@ -194,6 +215,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             text-align: left;
             width: 90%;
         }
+
         .error-message {
             color: #00d4ff;
             font-size: 0.9rem;
@@ -201,7 +223,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             text-align: left;
             width: 90%;
         }
-       
     </style>
 </head>
 <body>
@@ -217,14 +238,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <h1>Recallit</h1>
         </div>
         <form id="loginForm" method="POST" action="">
-            <!-- Email Input -->
             <input type="email" name="email" id="email" placeholder="Email"
                    value="<?= htmlspecialchars($email) ?>" required>
             <?php if (!empty($errors['email'])): ?>
                 <div class="error-message"><?= htmlspecialchars($errors['email']) ?></div>
             <?php endif; ?>
 
-            <!-- Password Input -->
             <input type="password" name="password" id="password" placeholder="Password" required>
             <?php if (!empty($errors['password'])): ?>
                 <div class="error-message"><?= htmlspecialchars($errors['password']) ?></div>
@@ -232,7 +251,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <br>
 
-            <!-- Submit Button -->
             <button type="submit" class="cta-button">Login</button>
         </form>
     </div>

@@ -1,230 +1,319 @@
 <?php
-require_once __DIR__ . '/../common/config.php';
-
-// Check if the 'id' parameter is passed first (before querying all users)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id']) && is_numeric($_POST['id'])) {
-    $userId = intval($_POST['id']); // Sanitize the input correctly from POST
-    // Prepare the DELETE query
-    $stmt = mysqli_prepare($conn, "DELETE FROM users WHERE id = ?");
-    if ($stmt) {
-        mysqli_stmt_bind_param($stmt, "i", $userId);
-        mysqli_stmt_execute($stmt);
-
-        // Check if user was deleted
-        if (mysqli_stmt_affected_rows($stmt) > 0) {
-            mysqli_stmt_close($stmt);
-            mysqli_close($conn);
-            header("Location: admin_index.php"); // Redirect after delete
-            exit();
-        } else {
-            echo "Error deleting user.";
-        }
-        mysqli_stmt_close($stmt);
-    } else {
-        echo "Database error.";
-    }
-}
-
-// Now fetch all users after any deletion logic has been handled
-$sql = "SELECT id, username, email FROM users";
-$result = $conn->query($sql); 
-
+session_start();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - RecallIt</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      width: 100vw;
-      height: 100vh;
-      background-color: #121212;
-      color: #f8f6f6;
-      font-family: 'Poppins', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* Header Styling */
-    .view-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background-color: #1a1a1a;
-      box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
-      width: 100%;
-    }
-
-    .logo-section {
-      display: flex;
-      align-items: center;
-    }
-
-    .logo {
-      width: 40px;
-      height: 40px;
-      margin-right: 10px;
-    }
-
-    .logo-name {
-      font-size: 24px;
-      color: #00f7ff;
-      font-weight: bold;
-    }
-
-    .home-section .home-link {
-      font-size: 24px;
-      color: #00f7ff;
-      text-decoration: none;
-      transition: color 0.3s ease;
-    }
-
-    .home-link:hover {
-      color: #02c6d2;
-    }
-
-    /* Back Button */
-    .back-link {
-      font-size: 14px;
-      color: #00f7ff;
-      text-decoration: none;
-      transition: color 0.3s ease;
-    }
-
-    .back-link:hover {
-      color: #02c6d2;
-    }
-
-    /* Table Styling */
-    .table-container {
-      width: 90%;
-      max-width: 900px;
-      background-color: #1a1a1a;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 2px 15px rgba(18, 239, 247, 0.849);
-      margin: 30px auto;
-      text-align: center;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    th, td {
-      padding: 12px;
-      text-align: center;
-      border-bottom: 1px solid #00f7ff;
-    }
-
-    th {
-      background-color: #26262c;
-      color: #00f7ff;
-      font-size: 18px;
-      text-transform: uppercase;
-    }
-
-    td {
-      background-color: #1e1e1e;
-      color: #ffffff;
-    }
-
-    .empty-message {
-      color: #ccc;
-      font-size: 18px;
-      margin-top: 20px;
-    }
-
-    .delete-link {
-        color: #00d4ff;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    .delete-link:hover {
-        color: #02c6d2; /* Optional hover effect */
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Header -->
-  <div class="view-header">
-    <div class="logo-section">
-      <img src="logo.png" alt="RecallIt Logo" class="logo">
-      <span class="logo-name">Recallit</span>
-    </div>
-    <div class="home-section">
-      <a href="admin_login.php" class="home-link">
-        <i class="fas fa-home"></i>
-      </a>
-    </div>
-  </div>
-
-  <!-- Table Container -->
-  <div class="table-container">
-    <h2>Registered Users Data</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>id</th>
-          <th>Username</th>
-          <th>Email</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php
-        if ($result->num_rows > 0) {
-            $index = 1;
-            while ($row = $result->fetch_assoc()) {
-                echo "<tr>";
-                echo "<td>" . $row['id'] . "</td>";
-                echo "<td>" . $row['username'] . "</td>";
-                echo "<td>" . $row['email'] . "</td>";
-                echo "<td>
-                <form method='POST' action='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "'>
-                    <input type='hidden' name='id' value='" . htmlspecialchars($row["id"]) . "'>
-                    <button type='submit' class='delete-link' style='background:none;border:none;color:#00d4ff;cursor:pointer;' onclick='return confirmDelete();'>Delete</button>
-                </form>
-
-                      </td>";
-                echo "</tr>";
-            }
-        }else{
-            echo "<tr><td colspan='4' class='empty-message'>No users registered yet!</td></tr>";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        /* Custom styles for the sidebar and layout */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f172a; /* Dark background for body */
+            color: #f8fafc;
         }
-        ?>
-      </tbody>
-    </table>
-  </div>
+        .sidebar {
+            background-color: #1e293b;
+            color: #f8fafc;
+            height: 100vh;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 2rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        .sidebar-logo {
+            margin-bottom: 2rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .sidebar-logo img {
+            height: 3rem;
+            width: 3rem;
+        }
+        .sidebar-logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #00ffff; /* Cyan for logo heading */
+        }
 
-  <div class="back-section">
-    <a href="admin_login.php" class="back-link">
-      Logout
-    </a>
-    <br><br>
-  </div>
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        .sidebar-menu li {
+            margin-bottom: 1rem;
+        }
+        .sidebar-menu li a {
+            color: #f8fafc;
+            text-decoration: none;
+            display: block;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        .sidebar-menu li a:hover {
+            background-color: #334155;
+        }
+        .sidebar-menu li a.active {
+            background-color: #00ffff; /* Active link in cyan */
+            color: #0f172a;
+            font-weight: 600;
+        }
 
-  <script>
-    function confirmDelete() {
-        return confirm("Are you sure you want to delete this user?");
-    }
-</script>
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+            flex: 1;
+        }
+        .top-bar {
+            background-color: #2d3748;
+            color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-bar h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0;
+        }
+        .top-bar-actions {
+            display: flex;
+            gap: 1rem;
+        }
 
+        .report-section {
+            background-color: #2d3748;
+            color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .report-header{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .user-list {
+            background-color: #2d3748;
+            color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            color: #f8fafc;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #4a5568;
+        }
+        th {
+            font-weight: 600;
+            color: #cbd5e0;
+        }
+        tbody tr:hover {
+            background-color: #4a5568;
+        }
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            color: white;
+        }
+        .edit-button {
+            background-color: #6b7280;
+        }
+        .edit-button:hover {
+            background-color: #4b5563;
+        }
+        .delete-button {
+            background-color: #dc2626;
+        }
+        .delete-button:hover {
+            background-color: #b91c1c;
+        }
+        .chat-button {
+            background-color: #00ffff; /* Cyan chat button */
+            color: #0f172a;
+        }
+        .chat-button:hover {
+            background-color: #4dd0e1; /* Lighter cyan hover */
+            color: #0f172a;
+        }
+
+        .message-box {
+            background-color: #1e293b;
+            border: 1px solid #4a5568;
+            color: #f8fafc;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.375rem;
+        }
+
+         .message-box strong {
+            color: #00ffff; /* Cyan for username in message box */
+        }
+
+        .text-input{
+            color: #f8fafc;
+        }
+
+        .report-notification {
+            position: relative;
+            display: inline-flex; /* Use inline-flex for better alignment */
+            align-items: center;
+        }
+        .report-notification::after {
+            content: ""; /* Initially empty */
+            position: absolute;
+            top: 50%; /* Vertically center the badge */
+            right: 0;
+            background-color: #00ffff; /* Changed to cyan */
+            color: #0f172a;      /* Changed text color to dark gray */
+            font-size: 0.75rem;
+            padding: 0.25rem;
+            border-radius: 50%;
+            width: 1.25rem;
+            height: 1.25rem;
+            text-align: center;
+            line-height: 1.25rem;
+            transform: translateY(-50%); /* Correct vertical positioning */
+            margin-left: 0.75rem; /* Increased horizontal space between text and badge */
+            display: none; /* Initially hidden */
+        }
+        .report-notification a{
+             padding-right: 2rem; /* Add padding to the right of the link */
+             display: flex; /* Use flexbox to align items horizontally */
+             align-items: center;
+        }
+
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="logo.png" alt="Recallit Logo">
+            <h1>Recallit</h1>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="admin_index.php" class="active">Dashboard</a></li>
+            <li class="report-notification"><a href="reports.php">Reports</a></li>
+        </ul>
+    </aside>
+    <main class="main-content">
+        <div class="top-bar">
+            <h2>Admin Dashboard</h2>
+            <div class="top-bar-actions">
+                <button id="export-btn" class="button bg-green-500 hover:bg-green-700">Export Data</button>
+            </div>
+        </div>
+        <div  id="user-list-container">
+            <?php include 'users.php'; ?>
+        </div>
+    </main>
+    <script>
+        const reportLink = document.querySelector('.report-notification a');
+        const reportCountElement = document.querySelector('.report-notification::after');
+        const reportNotificationContainer = document.querySelector('.report-notification');
+        let reportCount = 0;
+        const usersLink = document.getElementById('users-link');
+        const userListContainer = document.getElementById('user-list-container');
+
+
+        // Function to increment the report count
+        function incrementReportCount() {
+            reportCount++;
+            reportCountElement.textContent = reportCount;
+            if (reportCount > 0) {
+                reportNotificationContainer.classList.remove('hidden');
+                reportCountElement.style.display = 'block'; // Make the badge visible
+            }
+        }
+
+        // Function to decrement the report count
+        function decrementReportCount() {
+            reportCount--;
+            reportCountElement.textContent = reportCount;
+             if (reportCount === 0) {
+                reportNotificationContainer.classList.add('hidden');
+                reportCountElement.style.display = 'none'; // Hide the badge
+            }
+        }
+
+        reportLink.addEventListener('click', (event) => {
+            event.preventDefault();
+            window.location.href = "reports.php";
+        });
+
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const table = document.getElementById('user-table'); // Correct ID.
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, 'user_data.xlsx');
+        });
+
+
+
+        usersLink.addEventListener('click', (event) => {
+            event.preventDefault();
+            userListContainer.style.display = 'block';
+
+        });
+    </script>
 </body>
 </html>

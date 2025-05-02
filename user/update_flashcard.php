@@ -4,38 +4,77 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
+require_once '../common/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-require_once '../common/config.php';
+$user_id = $_SESSION['user_id'];
+$flashcard_id = $_GET['id'];
 
-// Check if an ID is provided in the URL
-if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-    $flashcardId = $_GET['id'];
-    $userId = $_SESSION['user_id'];
+// Initialize flashcard with default values
+$flashcard = [
+    'question' => '',
+    'answer' => '',
+    'image_path' => '',
+    'pdf_path' => '',
+    'subject' => ''
+];
 
-    // Fetch the flashcard data
-    $sql = "SELECT * FROM flashcards WHERE id = ? AND user_id = ?";
-    $stmt = $conn->prepare($sql);
-    
-    if (!$stmt) {
-        die("Prepare failed: " . $conn->error);
-    }
+// Check if this is a shared flashcard with edit permissions
+$is_shared = false;
+$original_flashcard_id = null;
+$owner_id = null;
+$has_edit_permission = false;
 
-    $stmt->bind_param("ii", $flashcardId, $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $flashcard = $result->fetch_assoc();
+// First check if user owns the flashcard directly
+$stmt = $conn->prepare("SELECT * FROM flashcards WHERE id = ? AND user_id = ?");
+$stmt->bind_param("ii", $flashcard_id, $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$flashcard = $result->fetch_assoc();
+$stmt->close();
 
-    if (!$flashcard) {
-        header("Location: my-flashcard.php");
-        exit;
-    }
+if ($flashcard) {
+    // User is the owner - has full permissions
+    $has_edit_permission = true;
 } else {
-    header("Location: subjects.php");
+    // Check if it's a shared flashcard
+    $shared_stmt = $conn->prepare("
+        SELECT sf.*, f.user_id as owner_id 
+        FROM shared_flashcards sf
+        JOIN flashcards f ON sf.flashcard_id = f.id
+        WHERE sf.recipient_flashcard_id = ?
+        AND sf.recipient_id = ?
+        AND sf.status = 'Accepted'
+    ");
+    $shared_stmt->bind_param("ii", $flashcard_id, $user_id);
+    $shared_stmt->execute();
+    $shared_info = $shared_stmt->get_result()->fetch_assoc();
+    $shared_stmt->close();
+
+    if ($shared_info) {
+        $is_shared = true;
+        $original_flashcard_id = $shared_info['flashcard_id'];
+        $owner_id = $shared_info['owner_id'];
+        $has_edit_permission = ($shared_info['permissions'] == 'edit');
+        
+        // Get the recipient's copy of the flashcard
+        $stmt = $conn->prepare("SELECT * FROM flashcards WHERE id = ?");
+        $stmt->bind_param("i", $flashcard_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $flashcard = $result->fetch_assoc();
+        $stmt->close();
+    }
+}
+
+// If no flashcard found or no edit permission, redirect
+if (!$flashcard || (!$has_edit_permission && $is_shared)) {
+    $_SESSION['error'] = "You don't have permission to edit this flashcard";
+    header("Location: my-flashcard.php");
     exit;
 }
 
@@ -45,11 +84,11 @@ if (isset($_POST['update_flashcard'])) {
     $answer = $_POST['answer'];
     $uploadError = null;
     
-    // Initialize with existing paths
+    // Initialize with existing paths (user's own files)
     $imagePath = $flashcard['image_path'];
     $pdfPath = $flashcard['pdf_path'];
 
-    // Handle image upload
+    // Handle image upload - only updates user's copy
     if (!empty($_FILES['image']['name'])) {
         $uploadResult = handleFileUpload($_FILES['image'], 'images');
         if ($uploadResult === false) {
@@ -66,7 +105,7 @@ if (isset($_POST['update_flashcard'])) {
         }
     }
 
-    // Handle PDF upload
+    // Handle PDF upload - only updates user's copy
     if (!empty($_FILES['pdf']['name'])) {
         $uploadResult = handleFileUpload($_FILES['pdf'], 'files');
         if ($uploadResult === false) {
@@ -84,23 +123,62 @@ if (isset($_POST['update_flashcard'])) {
     }
 
     if (!$uploadError) {
-        // Update database
-        $sqlUpdate = "UPDATE flashcards SET question = ?, answer = ?, image_path = ?, pdf_path = ? WHERE id = ? AND user_id = ?";
-        $stmtUpdate = $conn->prepare($sqlUpdate);
-        
-        if ($stmtUpdate) {
-            $stmtUpdate->bind_param("ssssii", $question, $answer, $imagePath, $pdfPath, $flashcardId, $userId);
+        // Start transaction if this is a shared flashcard
+        if ($is_shared) {
+            $conn->begin_transaction();
+        }
+
+        try {
+            $changes_made = false;
             
-            if ($stmtUpdate->execute()) {
-                $_SESSION['success'] = "";
-                header("Location: my-flashcard.php?subject=" . urlencode($flashcard['subject']));
-                exit;
-            } else {
-                $updateError = "Error saving changes: " . $stmtUpdate->error;
+            // Check if content has changed
+            $content_changed = ($question != $flashcard['question'] || $answer != $flashcard['answer']);
+            $image_changed = (!empty($_FILES['image']['name']));
+            $pdf_changed = (!empty($_FILES['pdf']['name']));
+            
+            if ($content_changed || $image_changed || $pdf_changed) {
+                // Update the current flashcard (user's copy)
+                $sqlUpdate = "UPDATE flashcards SET question = ?, answer = ?, image_path = ?, pdf_path = ? WHERE id = ?";
+                $stmtUpdate = $conn->prepare($sqlUpdate);
+                $stmtUpdate->bind_param("ssssi", $question, $answer, $imagePath, $pdfPath, $flashcard_id);
+                $stmtUpdate->execute();
+                
+                if ($stmtUpdate->affected_rows > 0) {
+                    $changes_made = true;
+                }
+                
+                if ($is_shared && $has_edit_permission && $content_changed) {
+                    // For shared flashcards with edit permission, update the original
+                    $stmtUpdateOriginal = $conn->prepare("UPDATE flashcards SET question = ?, answer = ? WHERE id = ?");
+                    $stmtUpdateOriginal->bind_param("ssi", $question, $answer, $original_flashcard_id);
+                    $stmtUpdateOriginal->execute();
+                    
+                    if ($stmtUpdateOriginal->affected_rows > 0) {
+                        // Notify the owner of the change
+                        $message = "Your shared flashcard was updated by " . $_SESSION['username'];
+                        $stmtNotify = $conn->prepare("INSERT INTO notifications (user_id, message, flashcard_id, status) VALUES (?, ?, ?, 'Unread')");
+                        $stmtNotify->bind_param("isi", $owner_id, $message, $original_flashcard_id);
+                        $stmtNotify->execute();
+                    }
+                    
+                    $conn->commit();
+                }
             }
-            $stmtUpdate->close();
-        } else {
-            $updateError = "Database error: " . $conn->error;
+
+            if ($changes_made) {
+                $_SESSION['success'] = "Flashcard updated successfully";
+            } else {
+                $_SESSION['info'] = "No changes were made to the flashcard";
+            }
+            header("Location: my-flashcard.php?subject=" . urlencode($flashcard['subject']));
+            exit;
+        } catch (Exception $e) {
+            if ($is_shared) {
+                $conn->rollback();
+            }
+            $_SESSION['error'] = "Error saving changes: " . $e->getMessage();
+            header("Location: update_flashcard.php?id=$flashcard_id");
+            exit;
         }
     }
 }
@@ -108,8 +186,9 @@ if (isset($_POST['update_flashcard'])) {
 function handleFileUpload($file, $type) {
     $uploadDir = $_SERVER['DOCUMENT_ROOT'] . '/RECALLIT1/yuka_4/uploads/' . $type . '/';
     
-    if (!file_exists($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+    if (!file_exists($uploadDir) && !mkdir($uploadDir, 0777, true)) {
+        error_log("Failed to create directory: $uploadDir");
+        return false;
     }
 
     $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -260,7 +339,14 @@ function handleFileUpload($file, $type) {
             transform: translateY(-2px);
         }
 
-    
+        .success-message {
+            color: #00ff00;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(0, 255, 0, 0.1);
+        }
 
         .error-message {
             color: #ff6b6b;
@@ -270,10 +356,19 @@ function handleFileUpload($file, $type) {
             border-radius: 6px;
             background-color: rgba(255, 107, 107, 0.1);
         }
+
+        .info-message {
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(0, 212, 255, 0.1);
+        }
     </style>
 </head>
 <body>
-    <div class="update-container">
+<div class="update-container">
         <h2>Update Flashcard</h2>
         
         <?php if (isset($_SESSION['success'])): ?>
@@ -283,15 +378,23 @@ function handleFileUpload($file, $type) {
             <?php unset($_SESSION['success']); ?>
         <?php endif; ?>
         
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($_SESSION['error']) ?>
+            </div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+        
+        <?php if (isset($_SESSION['info'])): ?>
+            <div class="info-message">
+                <i class="fas fa-info-circle"></i> <?= htmlspecialchars($_SESSION['info']) ?>
+            </div>
+            <?php unset($_SESSION['info']); ?>
+        <?php endif; ?>
+        
         <?php if (isset($uploadError)): ?>
             <div class="error-message">
                 <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($uploadError) ?>
-            </div>
-        <?php endif; ?>
-        
-        <?php if (isset($updateError)): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($updateError) ?>
             </div>
         <?php endif; ?>
 
@@ -339,6 +442,6 @@ function handleFileUpload($file, $type) {
 </body>
 </html>
 <?php
-$stmt->close();
-$conn->close();
-?>
+if (isset($conn) && $conn) {
+    $conn->close();
+}

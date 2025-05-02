@@ -1,25 +1,35 @@
 <?php
-  include '../common/config.php';
+include '../common/config.php';
 
-  $upload_message = '';
+$upload_message = '';
 
 // Handle file deletion
 if (isset($_GET['delete'])) {
-  $id = $_GET['delete'];
+  $id = intval($_GET['delete']); // Sanitize input
 
   // Get file name to delete it from folder
-  $getFileQuery = "SELECT file_name FROM subjects WHERE id = $id";
-  $result = $conn->query($getFileQuery);
-  if ($result && $result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $filePath = '../uploads/' . $row['file_name'];
-    if (file_exists($filePath)) {
-      unlink($filePath); // delete file from folder
-    }
+  $getFileQuery = "SELECT file_name FROM subjects WHERE id = ?";
+  $stmt = $conn->prepare($getFileQuery);
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $result = $stmt->get_result();
 
-    // delete row from database
-    $deleteQuery = "DELETE FROM subjects WHERE id = $id";
-    $conn->query($deleteQuery);
+  if ($result && $result->num_rows > 0) {
+      $row = $result->fetch_assoc();
+      $filePath = '../uploads/' . $row['file_name'];
+      
+      // Check if it's a file and delete it
+      if (file_exists($filePath) && is_file($filePath)) {
+          unlink($filePath); // Delete the file
+      }
+
+      // Delete record from database
+      $deleteQuery = "DELETE FROM subjects WHERE id = ?";
+      $stmt = $conn->prepare($deleteQuery);
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      
+      $upload_message = "File deleted successfully!";
   }
 }
 
@@ -35,19 +45,20 @@ $result = $conn->query($sql);
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>View Study Materials - RecallIt</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
     }
 
     body {
       width: 100vw;
-      height: 100vh;
+      min-height: 100vh;
       background-color: #121212;
       color: #f8f6f6;
-      font-family: 'Poppins', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -61,6 +72,9 @@ $result = $conn->query($sql);
       background-color: #1a1a1a;
       box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
       width: 100%;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     .logo-section {
@@ -80,7 +94,7 @@ $result = $conn->query($sql);
       font-weight: bold;
     }
 
-    .home-section .home-link {
+    .home-link {
       font-size: 24px;
       color: #00f7ff;
       text-decoration: none;
@@ -99,7 +113,12 @@ $result = $conn->query($sql);
       border-radius: 15px;
       box-shadow: 0 2px 15px rgba(18, 239, 247, 0.849);
       margin: 30px auto;
+    }
+
+    .message {
+      color: #00f7ff;
       text-align: center;
+      margin-bottom: 20px;
     }
 
     table {
@@ -130,37 +149,68 @@ $result = $conn->query($sql);
       color: #ccc;
       font-size: 18px;
       margin-top: 20px;
-    }
-
-    .back-link {
-      font-size: 14px;
-      color: #00f7ff;
-      text-decoration: none;
-      transition: color 0.3s ease;
-    }
-
-    .back-link:hover {
-      color: #02c6d2;
+      text-align: center;
     }
 
     .action-btn {
       background-color: #00d4ff;
       color: #000;
       border: none;
-      padding: 6px 12px;
-      margin: 2px;
+      padding: 8px 15px;
+      margin: 0 5px;
       border-radius: 5px;
       cursor: pointer;
       font-weight: 500;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
     }
 
     .action-btn:hover {
       background-color: #02a8c2;
+      transform: translateY(-2px);
+    }
+
+    .delete-btn {
+      background-color:  #00d4ff;
+    }
+
+    .delete-btn:hover {
+      background-color: #02a8c2;
     }
 
     .back-section {
-      margin-bottom: 30px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .back-link {
+      color: #00f7ff;
+      text-decoration: none;
+      font-size: 16px;
+      transition: color 0.3s ease;
+    }
+
+    .back-link:hover {
+      color: #02c6d2;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .table-container {
+        width: 95%;
+        padding: 15px;
+      }
+      
+      th, td {
+        padding: 8px;
+        font-size: 14px;
+      }
+      
+      .action-btn {
+        padding: 5px 10px;
+        margin: 2px;
+      }
     }
   </style>
 </head>
@@ -179,9 +229,14 @@ $result = $conn->query($sql);
     </div>
   </div>
 
-  <!-- Table -->
+  <!-- Table Container -->
   <div class="table-container">
-    <h2>Study Materials</h2>
+    <h2 style="text-align: center; color: #00f7ff; margin-bottom: 20px;">Study Materials</h2>
+    
+    <?php if (!empty($upload_message)): ?>
+      <div class="message"><?php echo $upload_message; ?></div>
+    <?php endif; ?>
+
     <table>
       <thead>
         <tr>
@@ -189,41 +244,42 @@ $result = $conn->query($sql);
           <th>Subject</th>
           <th>File Name</th>
           <th>Type</th>
-          <th>Action</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <?php
-          if ($result->num_rows > 0) {
-            $index = 1;
-            while($row = $result->fetch_assoc()) {
-              echo "<tr>";
-              echo "<td>" . $index++ . "</td>";
-              echo "<td>" . htmlspecialchars($row['subject_name']) . "</td>";
-              echo "<td>" . htmlspecialchars($row['file_name']) . "</td>";
-              echo "<td>" . pathinfo($row['file_name'], PATHINFO_EXTENSION) . "</td>";
-              echo "<td>
-                      <form method='get' action='../uploads/" . urlencode($row['file_name']) . "' target='_blank' style='display:inline-block;'>
-                        <button type='submit' class='action-btn'>View</button>
-                      </form>
-                      <form method='get' onsubmit='return confirm(\"Are you sure you want to delete this file?\")' style='display:inline-block;'>
-                        <input type='hidden' name='delete' value='" . (int)$row['id'] . "' />
-                        <button type='submit' class='action-btn'>Delete</button>
-                      </form>
-                    </td>";
-              echo "</tr>";
-            }
-          } else {
-            echo "<tr><td colspan='5' class='empty-message'>No files added yet!</td></tr>";
-          }
-        ?>
+        <?php if ($result->num_rows > 0): ?>
+          <?php $index = 1; ?>
+          <?php while($row = $result->fetch_assoc()): ?>
+            <tr>
+              <td><?php echo $index++; ?></td>
+              <td><?php echo htmlspecialchars($row['subject_name']); ?></td>
+              <td><?php echo htmlspecialchars($row['file_name']); ?></td>
+              <td><?php echo strtoupper(pathinfo($row['file_name'], PATHINFO_EXTENSION)); ?></td>
+              <td>
+              <a href="view_file.php?file=<?php echo urlencode($row['file_name']); ?>" class="action-btn">View</a>
+              <form method="get" style="display: inline;">
+                <input type="hidden" name="delete" value="<?php echo $row['id']; ?>" />
+                <button type="submit" class="action-btn delete-btn" onclick="return confirm('Are you sure you want to delete this file?')">Delete</button>
+              </form>
+              </td>
+            </tr>
+          <?php endwhile; ?>
+        <?php else: ?>
+          <tr>
+            <td colspan="5" class="empty-message">No study materials found. Upload some files to get started!</td>
+          </tr>
+        <?php endif; ?>
       </tbody>
     </table>
   </div>
 
   <div class="back-section">
-    <a href="study-guide.php" class="back-link">Back to Study Guide</a>
+    <a href="study-guide.php" class="back-link">
+      <i class="fas fa-arrow-left"></i> Back to Study Guide
+    </a>
   </div>
 
+  
 </body>
 </html>

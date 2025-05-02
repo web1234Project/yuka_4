@@ -181,8 +181,8 @@ $conn->close();
     <?php else: ?>
         <p>No subjects found.</p>
     <?php endif; ?>
-    <a href="user-dashboard.php" class="back-link">
-        <i class="fas fa-arrow-left"></i> Back to Study Guide
+    <a href="flash_creation.php" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Creation
     </a>
 </div>
 

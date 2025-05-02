@@ -1,88 +1,84 @@
 <?php
-// Start the session to manage user login state.
 session_start();
-
-// Check if the 'user_id' session variable is not set.
-// If not set, the user is not logged in, so redirect to the login page.
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit; // Terminate the current script after redirection.
-}
-
-// Include the database configuration file.
-// This file contains the database connection details.
 require_once '../common/config.php';
 
-// Check if the 'subject' GET parameter is set in the URL.
-// This parameter is used to filter flashcards by subject.
-if (isset($_GET['subject'])) {
-    // Sanitize the subject value from the GET request.
-    $subject = $_GET['subject'];
-    // Retrieve the logged-in user's ID from the session.
-    $userId = $_SESSION['user_id'];
-
-    // SQL query to select all flashcards for the specific user and subject,
-    // ordered by the creation date in descending order (newest first).
-    $sql = "SELECT * FROM flashcards WHERE user_id = ? AND subject = ? ORDER BY created_at DESC";
-    // Prepare the SQL statement for execution. This prevents SQL injection.
-    $stmt = $conn->prepare($sql);
-
-    // Check if the preparation of the SQL statement failed.
-    if (!$stmt) {
-        die("Prepare failed: " . $conn->error); // Terminate the script with an error message.
-    }
-
-    // Bind the parameters to the prepared statement.
-    // 'i' for integer (user_id), 's' for string (subject).
-    $stmt->bind_param("is", $userId, $subject);
-    // Execute the prepared SQL statement.
-    $stmt->execute();
-    // Get the result set from the executed statement.
-    $result = $stmt->get_result();
-    // Fetch all rows from the result set as an associative array.
-    $flashcards = $result->fetch_all(MYSQLI_ASSOC);
-
-    // --- DEBUGGING: Check if any flashcards are fetched ---
-    // if (empty($flashcards)) {
-    //     echo "<p style='color: red;'>No flashcards found for subject: " . htmlspecialchars($subject) . " and user ID: " . $userId . "</p>";
-    // } else {
-    //     echo "<p style='color: green;'>Found " . count($flashcards) . " flashcards.</p>";
-    //     // --- DEBUGGING: Output the structure of the first flashcard ---
-    //     echo "<pre style='color: yellow;'>";
-    //     print_r($flashcards[0]);
-    //     echo "</pre>";
-    // }
-    // --- END DEBUGGING ---
-
-} else {
-    // If the 'subject' GET parameter is not set, redirect the user
-    // back to the subjects.php page to choose a subject.
-    header("Location: subjects.php");
-    exit; // Terminate the script after redirection.
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
 }
+
+$userId = $_SESSION['user_id'];
+$subject = isset($_GET['subject']) ? $_GET['subject'] : '';
+$message = isset($_GET['message']) ? urldecode($_GET['message']) : '';
+
+if (empty($subject)) {
+    header("Location: subjects.php");
+    exit;
+}
+
+// Get owned flashcards
+$owned_query = "SELECT f.*, 'owner' as permission_type, 
+                NULL as share_id, NULL as owner_id, NULL as share_status
+                FROM flashcards f 
+                WHERE f.user_id = ? AND f.subject = ?";
+$owned_stmt = $conn->prepare($owned_query);
+$owned_stmt->bind_param("is", $userId, $subject);
+$owned_stmt->execute();
+$owned_flashcards = $owned_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Get shared flashcards with proper handling of view/edit permissions
+$shared_query = "SELECT 
+                    sf.permissions as permission_type,
+                    sf.share_id,
+                    sf.owner_id,
+                    sf.status as share_status,
+                    f.id,
+                    f.user_id,
+                    f.question,
+                    f.answer,
+                    f.subject,
+                    f.subject_id,
+                    f.image_path,
+                    f.pdf_path,
+                    f.created_at
+                FROM shared_flashcards sf
+                JOIN flashcards f ON (
+                    (sf.permissions = 'edit' AND sf.recipient_flashcard_id = f.id) OR 
+                    (sf.permissions = 'view' AND sf.flashcard_id = f.id)
+                )
+                WHERE sf.recipient_id = ? 
+                AND sf.status = 'Accepted'
+                AND f.subject = ?";
+$shared_stmt = $conn->prepare($shared_query);
+$shared_stmt->bind_param("is", $userId, $subject);
+$shared_stmt->execute();
+$shared_flashcards = $shared_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Combine results
+$flashcards = array_merge($owned_flashcards, $shared_flashcards);
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Flashcards - <?= htmlspecialchars(urldecode($subject)) ?> - RecallIt</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <style>
-        /* Basic styling for the body of the page */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-            background: #0e0e10;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+        <meta charset="UTF-8">
+        <title>Flashcards - <?= htmlspecialchars($subject) ?> - RecallIt</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Poppins', sans-serif;
+                background: #0e0e10;
+                color: #fff;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
 
-        .flashcard-header {
+.flashcard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -220,7 +216,7 @@ if (isset($_GET['subject'])) {
             transform: rotateY(180deg);
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Distribute space for buttons at the bottom */
+            justify-content: space-between;
         }
 
         .flip-button {
@@ -232,13 +228,8 @@ if (isset($_GET['subject'])) {
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s ease;
-            margin-top: auto; /* Push to the bottom */
+            margin-top: auto;
             margin-bottom: 10px;
-        }
-
-        .card-face.back .flip-button {
-            margin-top: 10px; /* Adjust if needed */
-            margin-bottom: 5px;
         }
 
         .action-buttons {
@@ -247,8 +238,8 @@ if (isset($_GET['subject'])) {
             gap: 10px;
             width: 100%;
             align-items: center;
-            margin-top: 10px; /* Add some space above the buttons */
-            margin-bottom: 10px; /* Add some space below the buttons */
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         .action-button {
@@ -292,14 +283,13 @@ if (isset($_GET['subject'])) {
         }
 
         .card-image {
-            max-width: 80%;
-            max-height: 200px;
-            margin-top: 10px;
-            margin-bottom: 10px;
+            max-width: 50%;
+            max-height: 120px;
+            margin: 10px 0;
             border-radius: 8px;
             object-fit: contain;
         }
-        /* Share Modal Styles */
+
         .share-modal {
             display: none;
             position: fixed;
@@ -332,80 +322,122 @@ if (isset($_GET['subject'])) {
         .close-share-modal:hover {
             color: #fff;
         }
+
+        .answer-heading {
+            margin-top: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .message-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #00f7ff;
+            color: #0e0e10;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1001;
+            animation: fadeIn 0.3s, fadeOut 0.3s 2.5s forwards;
+        }
+        .permission-badge {
+            background: rgba(0, 247, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin: 10px 0;
+            display: inline-block;
+            color: #00f7ff;
+        }
+
+        .permission-badge i {
+            margin-right: 5px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; top: 0; }
+            to { opacity: 1; top: 20px; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; top: 20px; }
+            to { opacity: 0; top: 0; }
+        }
     </style>
 </head>
 <body>
-
-<div class="flashcard-header">
-    <div class="logo-section">
-        <img src="logo.png" alt="RecallIt Logo" class="logo" />
-        <span class="logo-name">RecallIt</span>
+    <div class="flashcard-header">
+        <div class="logo-section">
+            <img src="logo.png" alt="RecallIt Logo" class="logo" />
+            <span class="logo-name">RecallIt</span>
+        </div>
+        <div class="home-section">
+            <a href="user-dashboard.php" class="home-link">
+                <i class="fa-solid fa-house"></i>
+            </a>
+        </div>
     </div>
-    <div class="home-section">
-        <a href="user-dashboard.php" class="home-link">
-            <i class="fa-solid fa-house"></i>
-        </a>
+
+    
+<?php if (!empty($message)): ?>
+    <div class="message-alert" id="messageAlert">
+        <?= htmlspecialchars($message) ?>
     </div>
-</div>
+    <script>
+        setTimeout(() => {
+            document.getElementById('messageAlert').style.display = 'none';
+        }, 3000);
+    </script>
+<?php endif; ?>
 
-<h2 class="subject-title"><?= htmlspecialchars(urldecode($subject)) ?> Flashcards</h2>
-
+<h2 class="subject-title"><?= htmlspecialchars($subject) ?> Flashcards</h2>
+    
 <div class="container">
     <?php if (count($flashcards) > 0): ?>
         <?php foreach ($flashcards as $card): ?>
+            <?php
+            $is_owner = ($card['permission_type'] === 'owner');
+            $share_id = $card['share_id']; // Now available for shared cards
+            $share_status = $card['share_status']; // Now available
+            $can_edit = $is_owner || $card['permission_type'] === 'edit';
+            
+            $baseUrl = '/RECALLIT1/yuka_4/';
+            $imagePath = !empty($card['image_path']) ? $card['image_path'] : '';
+            $imageUrl = $imagePath ? $baseUrl . $imagePath : '';
+            $imageExists = $imagePath && file_exists($_SERVER['DOCUMENT_ROOT'] . $imageUrl);
+
+            $pdfPath = !empty($card['pdf_path']) ? $card['pdf_path'] : '';
+            $pdfUrl = $pdfPath ? $baseUrl . $pdfPath : '';
+            $pdfExists = $pdfPath && file_exists($_SERVER['DOCUMENT_ROOT'] . $pdfUrl);
+            ?>
+            
             <div class="flashcard-wrapper">
-                <div class="flashcard" onclick="this.classList.toggle('flipped');">
+                <div class="flashcard">
                     <div class="card-face front">
                         <h3>Question</h3>
                         <p><?= htmlspecialchars($card['question']) ?></p>
                         <button class="flip-button">Flip</button>
                     </div>
+                    
                     <div class="card-face back">
-                        <h3>Answer</h3>
+                        <h3 class="answer-heading">Answer</h3>
                         <p><?= htmlspecialchars($card['answer']) ?></p>
-
-                        <?php
-                        // Define base paths
-                        $baseUrl = '/RECALLIT1/yuka_4/'; // Adjust this to match your project's base URL
-
-                        // Process image path
-                        $imagePath = !empty($card['image_path']) ? $card['image_path'] : '';
-                        $imageUrl = $imagePath ? $baseUrl . $imagePath : '';
-                        $imageFullPath = $_SERVER['DOCUMENT_ROOT'] . $imageUrl;
-                        $imageExists = $imagePath && file_exists($imageFullPath);
-
-                        // Process PDF path
-                        $pdfPath = !empty($card['pdf_path']) ? $card['pdf_path'] : '';
-                        $pdfUrl = $pdfPath ? $baseUrl . $pdfPath : '';
-                        $pdfFullPath = $_SERVER['DOCUMENT_ROOT'] . $pdfUrl;
-                        $pdfExists = $pdfPath && file_exists($pdfFullPath);
-
-                        // Debug output (uncomment when troubleshooting)
-                        /*
-                        echo "<pre>Debug Info for card ID: " . $card['id'] . "\n";
-                        echo "DOCUMENT_ROOT: " . $_SERVER['DOCUMENT_ROOT'] . "\n";
-                        echo "Base URL: " . $baseUrl . "\n";
-                        echo "Image Path (DB): " . $imagePath . "\n";
-                        echo "Image URL: " . $imageUrl . "\n";
-                        echo "Full Image Path: " . $imageFullPath . "\n";
-                        echo "Image Exists: " . ($imageExists ? 'Yes' : 'No') . "\n";
-                        echo "PDF Path (DB): " . $pdfPath . "\n";
-                        echo "PDF URL: " . $pdfUrl . "\n";
-                        echo "Full PDF Path: " . $pdfFullPath . "\n";
-                        echo "PDF Exists: " . ($pdfExists ? 'Yes' : 'No') . "\n";
-                        echo "</pre>";
-                        */
-
-                        // Display image if exists
-                        if ($imageExists): ?>
-                            <img src="<?= htmlspecialchars($imageUrl) ?>" alt="Flashcard Image" class="card-image">
-                        <?php endif; ?>
+                        
+                        <div class="permission-badge">
+                            <?php if ($is_owner): ?>
+                                <i class="fas fa-crown"></i> Owner
+                            <?php elseif ($card['permission_type'] === 'edit'): ?>
+                                <i class="fas fa-edit"></i> Can Edit
+                            <?php else: ?>
+                                <i class="fas fa-eye"></i> View Only
+                            <?php endif; ?>
+                        </div>
 
                         <div class="action-buttons">
                             <?php if ($imageExists || $pdfExists): ?>
                                 <?php if ($pdfExists): ?>
                                     <a href="<?= htmlspecialchars($pdfUrl) ?>" class="action-button" target="_blank">
-                                        <i class="fas fa-file-pdf"></i> View Files
+                                        <i class="fas fa-file-pdf"></i> View PDF
                                     </a>
                                 <?php endif; ?>
                                 <?php if ($imageExists): ?>
@@ -417,13 +449,17 @@ if (isset($_GET['subject'])) {
                                 <p class="no-files">No files uploaded</p>
                             <?php endif; ?>
 
-                            <a href="update_flashcard.php?id=<?= $card['id'] ?>" class="action-button">
-                                <i class="fas fa-edit"></i> Update
-                            </a>
-                            <button class="action-button share-button" data-card-id="<?= $card['id'] ?>">
-                                <i class="fas fa-share-alt"></i> Share
+                            <?php if ($can_edit): ?>
+                                <a href="update_flashcard.php?id=<?= $card['id'] ?>" class="action-button">
+                                    <i class="fas fa-edit"></i> Update
+                                </a>
+                            <?php endif; ?>
+                       
+                            <?php if ($is_owner): ?>
+                                <button class="action-button share-button" data-card-id="<?= $card['id'] ?>">
+                                    <i class="fas fa-share-alt"></i> Share
                                 </button>
-                        
+                            <?php endif; ?>
                         </div>
                         <button class="flip-button">Flip</button>
                     </div>
@@ -434,73 +470,78 @@ if (isset($_GET['subject'])) {
         <p>No flashcards found for this subject.</p>
     <?php endif; ?>
 </div>
-</div>
 
 <a href="subjects.php" class="back-link">
     <i class="fas fa-arrow-left"></i> Back to Subjects
 </a>
-<div id="shareModal" class="share-modal">
-    <div class="share-modal-content">
-        <span class="close-share-modal">&times;</span>
-        <h3 style="color: #00d4ff; margin-bottom: 20px; text-align: center;">Share Flashcard</h3>
-        <form id="shareForm" method="post" action="share_flashcard.php">
-            <input type="hidden" name="flashcard_id" id="shareFlashcardId">
-            <input type="hidden" name="subject" value="<?= htmlspecialchars($subject) ?>">
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; color: #eee;">Recipient's Email:</label>
-                <input type="email" name="recipient_email" required 
-                       style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; 
-                       background: #2c2c3e; color: #fff; box-sizing: border-box;">
-            </div>
-            <button type="submit" style="background-color: #00f7ff; color: #0e0e10; border: none; 
-                    padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%;">
-                Send
-            </button>
-        </form>
+    <div id="shareModal" class="share-modal">
+        <div class="share-modal-content">
+            <span class="close-share-modal">&times;</span>
+            <h3 style="color: #00d4ff; margin-bottom: 20px; text-align: center;">Share Flashcard</h3>
+            <form id="shareForm" method="post" action="share_flashcard.php?subject=<?= urlencode($subject) ?>">
+                <input type="hidden" name="flashcard_id" id="shareFlashcardId">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #eee;">Recipient's Username:</label>
+                    <input type="text" name="recipient_username" required 
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; 
+                        background: #2c2c3e; color: #fff; box-sizing: border-box;"
+                        placeholder="Enter username">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #eee;">Permissions:</label>
+                    <select name="permissions" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2c2c3e; color: #fff; box-sizing: border-box;">
+                        <option value="view">View Only</option>
+                        <option value="edit">Can Edit</option>
+                    </select>
+                </div>
+                <button type="submit" style="background-color: #00f7ff; color: #0e0e10; border: none; 
+                        padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%;">
+                    Send
+                </button>
+            </form>
+        </div>
     </div>
-</div>
 
-<script>
-    const flipButtons = document.querySelectorAll('.flip-button');
-    flipButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            const card = this.closest('.flashcard');
-            card.classList.toggle('flipped');
-            event.stopPropagation();
+    <script>
+        // Flip functionality
+        document.querySelectorAll('.flip-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.closest('.flashcard').classList.toggle('flipped');
+            });
         });
-    });
 
-    const flashcardWrappers = document.querySelectorAll('.flashcard-wrapper');
-    flashcardWrappers.forEach(wrapper => {
-        const card = wrapper.querySelector('.flashcard');
-        wrapper.addEventListener('click', function() {
-            card.classList.toggle('flipped');
+        // Share modal functionality
+        const shareButtons = document.querySelectorAll('.share-button');
+        const shareModal = document.getElementById('shareModal');
+        const shareFlashcardId = document.getElementById('shareFlashcardId');
+        
+        shareButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                shareFlashcardId.value = this.getAttribute('data-card-id');
+                shareModal.style.display = 'block';
+            });
         });
-    });
-    // Share functionality
-    const shareButtons = document.querySelectorAll('.share-button');
-    const shareModal = document.getElementById('shareModal');
-    const shareFlashcardId = document.getElementById('shareFlashcardId');
-    const closeModal = document.querySelector('.close-share-modal');
-    
-    shareButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            shareFlashcardId.value = this.getAttribute('data-card-id');
-            shareModal.style.display = 'block';
-        });
-    });
-    
-    closeModal.addEventListener('click', () => {
-        shareModal.style.display = 'none';
-    });
-    
-    window.addEventListener('click', (e) => {
-        if (e.target === shareModal) {
+        
+        document.querySelector('.close-share-modal').addEventListener('click', () => {
             shareModal.style.display = 'none';
-        }
-    });
-</script>
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === shareModal) {
+                shareModal.style.display = 'none';
+            }
+        });
 
+        // Form validation
+        document.getElementById('shareForm').addEventListener('submit', function(e) {
+            const username = document.querySelector('input[name="recipient_username"]').value.trim();
+            if (!username) {
+                e.preventDefault();
+                alert('Please enter a username');
+            }
+        });
+    </script>
 </body>
-</html>
+</html> 
