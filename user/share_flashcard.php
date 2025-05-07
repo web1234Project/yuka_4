@@ -12,6 +12,18 @@ $recipient_username = trim($_POST['recipient_username']);
 $permissions = $_POST['permissions'];
 $subject = isset($_GET['subject']) ? $_GET['subject'] : '';
 
+$subjectid = null;
+$stmt = $conn->prepare("SELECT id FROM subjects WHERE subject_name = ?");
+$stmt->bind_param("i", $subject);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $subjectid = $row['id'];
+} else {
+    header("Location: my-flashcard.php?subject=".urlencode($subject)."&message=Subject not found");
+    exit;
+}
+
 // Validate input
 if (empty($recipient_username)) {
     header("Location: my-flashcard.php?subject=".urlencode($subject)."&message=Username cannot be empty");
@@ -79,10 +91,10 @@ try {
     // Insert into shared_flashcards as pending
     $stmt = $conn->prepare("
         INSERT INTO shared_flashcards 
-        (flashcard_id, owner_id, recipient_id, permissions, status) 
-        VALUES (?, ?, ?, ?, 'Pending')
+        (flashcard_id, owner_id, subjectid, recipient_id, permissions, status) 
+        VALUES (?, ?,?, ?, ?, 'Pending')
     ");
-    $stmt->bind_param("iiis", $flashcard_id, $owner_id, $recipient_id, $permissions);
+    $stmt->bind_param("iiiis", $flashcard_id, $owner_id, $subjectid, $recipient_id, $permissions);
     $stmt->execute();
     
     // Create notification

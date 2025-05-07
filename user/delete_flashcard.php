@@ -1,51 +1,36 @@
 <?php
-// Start the session
 session_start();
+require_once '../common/config.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
 
-// Include the database connection
-require_once '../common/config.php';
+$userId = $_SESSION['user_id'];
 
-// Check if the flashcard ID is provided in the URL
-if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-    $flashcardId = $_GET['id'];
-    $userId = $_SESSION['user_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['flashcard_id'])) {
+    $flashcardId = $_POST['flashcard_id'];
 
-    // Prepare the SQL statement to delete the flashcard
-    $sql = "DELETE FROM flashcards WHERE id = ? AND user_id = ?";
-    $stmt = $conn->prepare($sql);
+    // Confirm ownership
+    $check_query = "SELECT * FROM flashcards WHERE id = ? AND user_id = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ii", $flashcardId, $userId);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
 
-    if (!$stmt) {
-        die("Prepare failed: " . $conn->error);
-    }
+    if ($result->num_rows > 0) {
+        $delete_query = "DELETE FROM flashcards WHERE id = ?";
+        $delete_stmt = $conn->prepare($delete_query);
+        $delete_stmt->bind_param("i", $flashcardId);
+        $delete_stmt->execute();
 
-    // Bind the parameters
-    $stmt->bind_param("ii", $flashcardId, $userId);
-
-    // Execute the statement
-    if ($stmt->execute()) {
-        // Deletion successful, redirect back to my-flashcards.php with a success message
-        header("Location: my-flashcard.php?delete=success");
+        $subject = $result->fetch_assoc()['subject'];
+        header("Location: my-flashcard.php?subject=" . urlencode($subject) . "&message=" . urlencode($message));
         exit;
     } else {
-        // Deletion failed, redirect back to my-flashcards.php with an error message
-        header("Location: my-flashcard.php?delete=failed");
+        header("Location: subjects.php?message=" . urlencode("Unauthorized delete attempt."));
         exit;
     }
-
-    // Close the statement
-    $stmt->close();
-} else {
-    // If no valid ID is provided, redirect back to my-flashcards.php with an error
-    header("Location: my-flashcard.php?delete=invalid_id");
-    exit;
 }
-
-// Close the database connection
-$conn->close();
 ?>

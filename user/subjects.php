@@ -14,15 +14,28 @@ require_once '../common/config.php';
 // Get logged-in user's ID
 $userId = $_SESSION['user_id'];
 
-// Fetch unique subjects for this user
-$sql = "SELECT DISTINCT subject FROM flashcards WHERE user_id = ? ORDER BY subject ASC";
+// Fetch unique subjects from both flashcards and shared_flashcards for this user
+$sql = "
+  SELECT DISTINCT subject FROM flashcards 
+WHERE user_id = ?
+
+UNION
+
+SELECT DISTINCT f.subject FROM flashcards f
+JOIN shared_flashcards sf 
+  ON (sf.permissions = 'edit' AND sf.recipient_flashcard_id = f.id)
+   OR (sf.permissions = 'view' AND sf.flashcard_id = f.id)
+WHERE sf.recipient_id = ? AND sf.status = 'Accepted'
+";
+
+
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
     die("Prepare failed: " . $conn->error);
 }
 
-$stmt->bind_param("i", $userId);
+$stmt->bind_param("ii", $userId,$userId);
 $stmt->execute();
 $result = $stmt->get_result();
 $subjects = $result->fetch_all(MYSQLI_ASSOC);

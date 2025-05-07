@@ -418,7 +418,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['save'])) {
             // Set initial difficulty selection
             window.onload = function() {
                 const hiddenInput = document.getElementById("difficultyInput");
-                const currentDifficulty = hiddenInput.value || 'Medium';
+                const currentDifficulty = hiddenInput.value || '';
                 const buttons = {
                     'Easy': document.querySelector('.btn-easy'),
                     'Medium': document.querySelector('.btn-medium'),

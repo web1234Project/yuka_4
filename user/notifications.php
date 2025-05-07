@@ -57,31 +57,31 @@ if (isset($_POST['accept_share'])) {
         }
         
         // Copy to recipient's flashcards (without files)
-        $stmt = $conn->prepare("
-            INSERT INTO flashcards 
-            (user_id, question, answer, subject, subject_id) 
-            VALUES (?, ?, ?, ?, ?)
-        ");
-        $stmt->bind_param("isssi", 
-            $user_id, 
-            $original['question'], 
-            $original['answer'], 
-            $original['subject'],
-            $subject_id
-        );
-        $stmt->execute();
-        $new_flashcard_id = $conn->insert_id;
+        // $stmt = $conn->prepare("
+        //     INSERT INTO flashcards 
+        //     (user_id, question, answer, subject, subject_id) 
+        //     VALUES (?, ?, ?, ?, ?)
+        // ");
+        // $stmt->bind_param("isssi", 
+        //     $user_id, 
+        //     $original['question'], 
+        //     $original['answer'], 
+        //     $original['subject'],
+        //     $subject_id
+        // );
+        // $stmt->execute();
+        // $new_flashcard_id = $conn->insert_id;
         
         // Update share status to accepted and store recipient flashcard ID
         $update_share = $conn->prepare("
-            UPDATE shared_flashcards SET 
-            status = 'Accepted', 
-            recipient_flashcard_id = ?,
-            permissions = ?
-            WHERE share_id = ?
-        ");
-        $update_share->bind_param("isi", $new_flashcard_id, $share['permissions'], $share['share_id']);
-        $update_share->execute();
+        UPDATE shared_flashcards SET 
+        status = 'Accepted', 
+        permissions = ?, 
+        subjectid = ? 
+        WHERE share_id = ?
+    ");
+    $update_share->bind_param("sii", $share['permissions'], $subject_id, $share['share_id']);
+    $update_share->execute();
         
         // Update notification
         $update_notification = $conn->prepare("
@@ -166,192 +166,7 @@ $notification_result = $notifications->get_result();
     <meta charset="UTF-8">
     <title>Notifications - RecallIt</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-            background: #0e0e10;
-            color: #fff;
-            min-height: 100vh;
-        }
-
-```
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px;
-        background-color: #1a1a1a;
-        box-shadow: 0 2px 10px rgba(0, 247, 255, 0.1);
-        width: 100%;
-    }
-
-    .logo-section {
-        display: flex;
-        align-items: center;
-    }
-
-    .logo {
-        width: 40px;
-        height: 40px;
-        margin-right: 10px;
-    }
-
-    .logo-name {
-        font-size: 24px;
-        font-weight: bold;
-        color: #00f7ff;
-    }
-
-    .home-link {
-        font-size: 30px;
-        color: #00f7ff;
-        text-decoration: none;
-        transition: color 0.3s ease;
-        margin-right: 30px;
-    }
-
-    .home-link:hover {
-        color: #02c6d2;
-    }
-
-    .container {
-        background: #1a1a1a;
-        margin: 40px auto;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
-        width: 90%;
-        max-width: 800px;
-    }
-
-    h1 {
-        color: #00f7ff;
-        text-align: center;
-        margin-bottom: 30px;
-    }
-
-    .notification {
-        background: #2c2c3e;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 8px;
-        border-left: 4px solid #00f7ff;
-    }
-
-    .notification.unread {
-        border-left: 4px solid #ff5555;
-    }
-
-    .notification-message {
-        font-size: 16px;
-        margin-bottom: 10px;
-    }
-
-    .notification-time {
-        color: #aaa;
-        font-size: 14px;
-    }
-
-    .notification-actions {
-        margin-top: 15px;
-        display: flex;
-        gap: 10px;
-    }
-
-    .btn {
-        padding: 8px 16px;
-        border-radius: 5px;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-
-    .btn-accept {
-        background: #00f7ff;
-        color: #0e0e10;
-    }
-
-    .btn-accept:hover {
-        background: #00e5ff;
-    }
-
-    .btn-reject {
-        background: #ff5555;
-        color: white;
-    }
-
-    .btn-reject:hover {
-        background: #ff3333;
-    }
-
-    .flashcard-preview {
-        background: #3a3a4d;
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 10px;
-    }
-
-    .flashcard-preview p {
-        margin: 5px 0;
-    }
-
-    .success-message {
-        background: rgba(0, 255, 0, 0.1);
-        color: #00ff00;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        text-align: center;
-        border: 1px solid #00ff00;
-    }
-
-    .error-message {
-        background: rgba(255, 0, 0, 0.1);
-        color: #ff6b6b;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        text-align: center;
-        border: 1px solid #ff6b6b;
-    }
-
-    .empty-notifications {
-        text-align: center;
-        color: #aaa;
-        padding: 40px 0;
-    }
-
-    .back-link {
-        display: block;
-        text-align: center;
-        margin-top: 20px;
-        color: #00d4ff;
-        text-decoration: none;
-        transition: color 0.3s;
-    }
-
-    .back-link:hover {
-        color: #00f7ff;
-    }
-
-    .back-link i {
-        margin-right: 8px;
-    }
-
-    .permission-badge {
-        background: rgba(0, 247, 255, 0.2);
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-size: 12px;
-        margin: 5px 0;
-        display: inline-block;
-        color: #00f7ff;
-    }
-</style>
-```
+    <link rel="stylesheet" href="noti.css">
 
 </head>
 <body>
@@ -367,7 +182,7 @@ $notification_result = $notifications->get_result();
         </div>
     </div>
 
-```
+
 <div class="container">
     <h1>Notifications</h1>
     
@@ -426,7 +241,7 @@ $notification_result = $notifications->get_result();
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 </div>
-```
+
 
 </body>
 </html> 

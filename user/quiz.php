@@ -20,6 +20,13 @@ $subjects_sql = "
   FROM subjects s
   INNER JOIN flashcards f ON s.id = f.subject_id
   WHERE s.user_id = $user_id AND f.user_id = $user_id
+
+  UNION
+
+  SELECT DISTINCT s.*
+  FROM subjects s
+  INNER JOIN shared_flashcards sf ON s.id = sf.subjectid
+  WHERE sf.recipient_id = $user_id AND sf.status = 'Accepted'
 ";
 $subjects_result = $conn->query($subjects_sql);
 
